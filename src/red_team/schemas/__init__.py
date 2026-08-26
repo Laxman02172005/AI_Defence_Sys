@@ -41,6 +41,14 @@ from red_team.schemas.observable import (
     ObservableTransactionEvent,
     extract_observable,
 )
+from red_team.schemas.provenance import (
+    CalibrationMode,
+    DatasetSource,
+    DatasetSourceType,
+    FeatureProvenance,
+    ProvenanceTier,
+    ReferenceStatistic,
+)
 
 __all__ = [
     # Entities (Stage 2.1)
@@ -74,6 +82,13 @@ __all__ = [
     "ObservableSessionEvent",
     "ObservableTransactionEvent",
     "extract_observable",
+    # Provenance (Stage 2.4)
+    "CalibrationMode",
+    "DatasetSource",
+    "DatasetSourceType",
+    "FeatureProvenance",
+    "ProvenanceTier",
+    "ReferenceStatistic",
     # Ground Truth (Stage 2.3)
     "AttackGroundTruth",
     "AttackPhaseRecord",
