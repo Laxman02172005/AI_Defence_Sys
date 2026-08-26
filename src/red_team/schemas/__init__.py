@@ -49,6 +49,14 @@ from red_team.schemas.provenance import (
     ProvenanceTier,
     ReferenceStatistic,
 )
+from red_team.schemas.calibration import (
+    CalibrationDefinition,
+    FeaturePairCalibration,
+    FeatureType,
+    MarginalCalibrationConfig,
+    MetricType,
+    ThresholdDirection,
+)
 
 __all__ = [
     # Entities (Stage 2.1)
@@ -89,6 +97,13 @@ __all__ = [
     "FeatureProvenance",
     "ProvenanceTier",
     "ReferenceStatistic",
+    # Calibration (Stage 2.5)
+    "CalibrationDefinition",
+    "FeaturePairCalibration",
+    "FeatureType",
+    "MarginalCalibrationConfig",
+    "MetricType",
+    "ThresholdDirection",
     # Ground Truth (Stage 2.3)
     "AttackGroundTruth",
     "AttackPhaseRecord",
