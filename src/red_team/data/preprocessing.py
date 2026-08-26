@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from red_team.schemas.provenance import ReferenceStatistic
+from red_team.schemas.provenance import ReferenceStatistic, VerificationStatus
 from red_team.registry.population import build_first_slice_registry
 from red_team.data.reference_stats import save_reference_statistics
 
@@ -27,68 +27,82 @@ def _fallback_paysim_statistics() -> List[ReferenceStatistic]:
     
     These are strictly marked as REFERENCE_STATISTICS and externally_reported=True.
     """
+    req_note = "source reports/estimates this value; independently derived from raw data: no."
+    
     return [
         ReferenceStatistic(
             id="stat_paysim_tx_amount_median",
             statistic_name="transaction_amount_median",
-            value=74684.72,  # Approximate legitimate median from typical PaySim explorations
+            value="~75000",  # Approximate legitimate median from typical PaySim explorations
             source_dataset_id="paysim_kaggle_v1",
             source="Fallback Baseline (Estimated)",
             citation="Community EDA on Kaggle PaySim",
             statistic_definition="Median transaction amount for legitimate non-fraud transactions.",
             externally_reported=True,
+            verification_status=VerificationStatus.UNVERIFIED_ESTIMATE,
+            derivation_notes=req_note,
         ),
         ReferenceStatistic(
             id="stat_paysim_tx_type_freq",
             statistic_name="transaction_type_frequencies",
             value={
-                "CASH_OUT": 0.35,
-                "PAYMENT": 0.34,
-                "CASH_IN": 0.22,
-                "TRANSFER": 0.08,
-                "DEBIT": 0.01
+                "CASH_OUT": "~0.35",
+                "PAYMENT": "~0.34",
+                "CASH_IN": "~0.22",
+                "TRANSFER": "~0.08",
+                "DEBIT": "~0.01"
             },
             source_dataset_id="paysim_kaggle_v1",
             source="Fallback Baseline (Estimated)",
             citation="Community EDA on Kaggle PaySim",
             statistic_definition="Frequency distribution of transaction types for legitimate transactions.",
             externally_reported=True,
+            verification_status=VerificationStatus.UNVERIFIED_ESTIMATE,
+            derivation_notes=req_note,
         ),
         ReferenceStatistic(
             id="stat_paysim_customer_typ_amount_mean",
             statistic_name="customer_typical_amount_mean",
-            value=80000.0,
+            value="~80000",
             source_dataset_id="paysim_kaggle_v1",
             source="Fallback Baseline (Estimated)",
             citation="Community EDA on Kaggle PaySim",
             statistic_definition="Mean of the customer-grouped typical transaction amounts.",
             externally_reported=True,
+            verification_status=VerificationStatus.UNVERIFIED_ESTIMATE,
+            derivation_notes=req_note,
         ),
     ]
 
 
 def _fallback_ieee_cis_statistics() -> List[ReferenceStatistic]:
     """Provide externally reported / baseline assumptions for IEEE-CIS."""
+    req_note = "source reports/estimates this value; independently derived from raw data: no."
+    
     return [
         ReferenceStatistic(
             id="stat_ieee_device_type_freq",
             statistic_name="device_type_frequencies",
-            value={"desktop": 0.6, "mobile": 0.4},
+            value={"desktop": "~0.6", "mobile": "~0.4"},
             source_dataset_id="ieee_cis_fraud_v1",
             source="Fallback Baseline (Estimated)",
             citation="Community EDA on IEEE-CIS",
             statistic_definition="Frequency distribution of device types.",
             externally_reported=True,
+            verification_status=VerificationStatus.UNVERIFIED_ESTIMATE,
+            derivation_notes=req_note,
         ),
         ReferenceStatistic(
             id="stat_ieee_relative_dt_median",
             statistic_name="relative_transaction_dt_median",
-            value=86400,  # 1 day approx
+            value="~1 day (approx 86400s)",
             source_dataset_id="ieee_cis_fraud_v1",
             source="Fallback Baseline (Estimated)",
             citation="Community EDA on IEEE-CIS",
             statistic_definition="Median relative timedelta between transactions.",
             externally_reported=True,
+            verification_status=VerificationStatus.UNVERIFIED_ESTIMATE,
+            derivation_notes=req_note,
         )
     ]
 

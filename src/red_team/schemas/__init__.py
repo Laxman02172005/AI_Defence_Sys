@@ -48,6 +48,7 @@ from red_team.schemas.provenance import (
     FeatureProvenance,
     ProvenanceTier,
     ReferenceStatistic,
+    VerificationStatus,
 )
 from red_team.schemas.calibration import (
     CalibrationDefinition,
@@ -97,6 +98,7 @@ __all__ = [
     "FeatureProvenance",
     "ProvenanceTier",
     "ReferenceStatistic",
+    "VerificationStatus",
     # Calibration (Stage 2.5)
     "CalibrationDefinition",
     "FeaturePairCalibration",

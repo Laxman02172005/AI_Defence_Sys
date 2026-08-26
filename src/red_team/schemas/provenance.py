@@ -25,11 +25,19 @@ from pydantic import BaseModel, Field, model_validator
 # ---------------------------------------------------------------------------
 
 class ProvenanceTier(str, Enum):
-    """How the system obtained or derived this feature."""
+    """Rigorous classification of how a feature was derived."""
 
     TIER_1_LEARNED = "TIER_1_LEARNED"
     TIER_2_DERIVED = "TIER_2_DERIVED"
     TIER_3_DOMAIN_MODELED = "TIER_3_DOMAIN_MODELED"
+
+
+class VerificationStatus(str, Enum):
+    """Classification of reference statistic integrity."""
+
+    VERIFIED_EXTERNAL = "VERIFIED_EXTERNAL"
+    DERIVED_FROM_VERIFIED_EXTERNAL = "DERIVED_FROM_VERIFIED_EXTERNAL"
+    UNVERIFIED_ESTIMATE = "UNVERIFIED_ESTIMATE"
 
 
 class DatasetSourceType(str, Enum):
@@ -174,6 +182,14 @@ class ReferenceStatistic(BaseModel):
     externally_reported: bool = Field(
         ..., description="True if from a paper/report, False if calculated internally."
     )
+    calibration_mode: CalibrationMode = Field(
+        default=CalibrationMode.REFERENCE_STATISTICS,
+        description="Whether this was computed from RAW_DATA or taken from REFERENCE_STATISTICS."
+    )
+    verification_status: VerificationStatus = Field(
+        default=VerificationStatus.VERIFIED_EXTERNAL,
+        description="Integrity classification of the statistic."
+    )
 
     @model_validator(mode="after")
     def _validate_externally_reported(self) -> ReferenceStatistic:
@@ -181,4 +197,14 @@ class ReferenceStatistic(BaseModel):
         if self.externally_reported:
             if not self.citation or not self.citation.strip():
                 raise ValueError("Externally reported statistics require a citation.")
+
+        if self.verification_status == VerificationStatus.UNVERIFIED_ESTIMATE:
+            if not self.externally_reported:
+                raise ValueError("UNVERIFIED_ESTIMATE must be externally_reported=True.")
+            
+            # Enforce derivation_notes message
+            required_note = "source reports/estimates this value; independently derived from raw data: no."
+            if not self.derivation_notes or required_note not in self.derivation_notes:
+                raise ValueError(f"UNVERIFIED_ESTIMATE requires derivation_notes to include: '{required_note}'")
+
         return self

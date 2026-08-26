@@ -14,6 +14,7 @@ from red_team.schemas.provenance import (
     FeatureProvenance,
     ProvenanceTier,
     ReferenceStatistic,
+    VerificationStatus,
 )
 
 def build_first_slice_registry() -> ProvenanceRegistry:
@@ -175,6 +176,7 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             citation="Lopez-Rojas et al. (2016)",
             statistic_definition="FRAUD_DATASET_METADATA: Global percentage of transactions marked as isFraud. Note: This should NOT be used to calibrate legitimate normal world behavior.",
             externally_reported=True,
+            verification_status=VerificationStatus.VERIFIED_EXTERNAL,
         )
     ]
 

@@ -293,6 +293,47 @@ def test_reference_statistic_external_missing_citation():
         )
 
 
+def test_reference_statistic_unverified_estimate_valid():
+    rs = ReferenceStatistic(
+        id="rs-005",
+        statistic_name="some_estimate",
+        value=50.0,
+        source="Community",
+        citation="Forum post",
+        statistic_definition="Just an estimate",
+        externally_reported=True,
+        verification_status="UNVERIFIED_ESTIMATE",
+        derivation_notes="source reports/estimates this value; independently derived from raw data: no. Just a guess."
+    )
+    assert rs.verification_status == "UNVERIFIED_ESTIMATE"
+
+def test_reference_statistic_unverified_estimate_invalid_notes():
+    with pytest.raises(ValidationError, match="requires derivation_notes to include"):
+        ReferenceStatistic(
+            id="rs-006",
+            statistic_name="some_estimate",
+            value=50.0,
+            source="Community",
+            citation="Forum post",
+            statistic_definition="Just an estimate",
+            externally_reported=True,
+            verification_status="UNVERIFIED_ESTIMATE",
+            derivation_notes="I think this is right."
+        )
+
+def test_reference_statistic_unverified_estimate_must_be_external():
+    with pytest.raises(ValidationError, match="UNVERIFIED_ESTIMATE must be externally_reported=True"):
+        ReferenceStatistic(
+            id="rs-007",
+            statistic_name="some_estimate",
+            value=50.0,
+            source="Internal",
+            statistic_definition="Just an estimate",
+            externally_reported=False,
+            verification_status="UNVERIFIED_ESTIMATE",
+            derivation_notes="source reports/estimates this value; independently derived from raw data: no."
+        )
+
 def test_reference_statistic_serialization_roundtrip():
     rs = ReferenceStatistic(
         id="rs-004",
