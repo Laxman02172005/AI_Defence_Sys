@@ -23,13 +23,13 @@ def build_first_slice_registry() -> ProvenanceRegistry:
     # 1. Datasets
     # -----------------------------------------------------------------------
     ds_paysim = DatasetSource(
-        id="paysim_v1",
-        name="PaySim: A financial mobile money simulator for fraud detection",
-        source_url="https://www.kaggle.com/datasets/ealaxi/paysim1",
+        id="paysim_kaggle_v1",
+        name="PaySim Dataset (Kaggle ealaxi/paysim1)",
+        source_url="https://www.kaggle.com/datasets/ealaxi/paysim1/data",
         source_type=DatasetSourceType.SYNTHETIC_RESEARCH_DATASET,
-        access_method="Kaggle Download",
-        license="CC BY 4.0",
-        license_url="https://creativecommons.org/licenses/by/4.0/",
+        access_method="Kaggle CSV Download",
+        license="CC BY-SA 4.0",
+        license_url="https://creativecommons.org/licenses/by-sa/4.0/",
         redistribution_allowed=True,
         commercial_use_allowed=True,
         citation_required=True,
@@ -39,18 +39,18 @@ def build_first_slice_registry() -> ProvenanceRegistry:
     )
 
     ds_ieee = DatasetSource(
-        id="ieee_cis_fraud",
-        name="IEEE-CIS Fraud Detection",
-        source_url="https://www.kaggle.com/c/ieee-fraud-detection",
+        id="ieee_cis_fraud_v1",
+        name="IEEE-CIS Fraud Detection (Kaggle Competition)",
+        source_url="https://www.kaggle.com/c/ieee-fraud-detection/data",
         source_type=DatasetSourceType.REAL_WORLD_PRODUCTION,
-        access_method="Kaggle Competition Agreement",
-        license="Kaggle Competition Rules",
+        access_method="Kaggle Competition Agreement (Authentication Required)",
+        license="Subject to Kaggle Competition Rules",
         license_url="https://www.kaggle.com/c/ieee-fraud-detection/rules",
         redistribution_allowed=False,
         commercial_use_allowed=False,
         citation_required=True,
         raw_storage_policy="local_only",
-        known_limitations="Limited visibility into full user sessions; device data is hashed/obfuscated.",
+        known_limitations="TransactionDT is relative, not a wall-clock timestamp. Limited visibility into full user sessions; device data is hashed/obfuscated.",
         notes="Primary source for device and identity characteristics.",
     )
 
@@ -66,9 +66,9 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             entity="transaction",
             data_type="numerical",
             provenance_tier=ProvenanceTier.TIER_1_LEARNED,
-            source_datasets=["paysim_v1"],
+            source_datasets=["paysim_kaggle_v1"],
             source_fields=["amount"],
-            derivation_method="Empirical distribution fitting from PaySim transaction amounts.",
+            derivation_method="Empirical distribution fitting from PaySim (filtered for legitimate non-fraud transactions).",
             required_for_world_model=True,
         ),
         FeatureProvenance(
@@ -76,9 +76,9 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             entity="transaction",
             data_type="categorical",
             provenance_tier=ProvenanceTier.TIER_1_LEARNED,
-            source_datasets=["paysim_v1"],
+            source_datasets=["paysim_kaggle_v1"],
             source_fields=["type"],
-            derivation_method="Categorical frequency calculation from PaySim transaction types.",
+            derivation_method="Categorical frequency calculation from PaySim (legitimate transactions only).",
             required_for_world_model=True,
         ),
         FeatureProvenance(
@@ -86,9 +86,19 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             entity="device",
             data_type="categorical",
             provenance_tier=ProvenanceTier.TIER_1_LEARNED,
-            source_datasets=["ieee_cis_fraud"],
+            source_datasets=["ieee_cis_fraud_v1"],
             source_fields=["DeviceInfo", "DeviceType"],
             derivation_method="Extracted and normalized categorical mapping from IEEE-CIS device attributes.",
+            required_for_world_model=True,
+        ),
+        FeatureProvenance(
+            feature_name="relative_transaction_dt",
+            entity="transaction",
+            data_type="temporal",
+            provenance_tier=ProvenanceTier.TIER_1_LEARNED,
+            source_datasets=["ieee_cis_fraud_v1"],
+            source_fields=["TransactionDT"],
+            derivation_method="Extract relative timedelta distributions (not wall-clock) to understand session gaps.",
             required_for_world_model=True,
         ),
         
@@ -98,9 +108,9 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             entity="customer",
             data_type="numerical",
             provenance_tier=ProvenanceTier.TIER_2_DERIVED,
-            source_datasets=["paysim_v1"],
+            source_datasets=["paysim_kaggle_v1"],
             source_fields=["amount", "nameOrig"],
-            derivation_method="Calculated as the mean of transaction amounts grouped by customer.",
+            derivation_method="Calculated as the mean of legitimate transaction amounts grouped by customer.",
             required_for_world_model=True,
         ),
         
@@ -160,10 +170,10 @@ def build_first_slice_registry() -> ProvenanceRegistry:
             id="stat_paysim_fraud_rate",
             statistic_name="paysim_global_fraud_rate",
             value=0.0013,  # 0.13%
-            source_dataset_id="paysim_v1",
+            source_dataset_id="paysim_kaggle_v1",
             source="PaySim Paper",
             citation="Lopez-Rojas et al. (2016)",
-            statistic_definition="Global percentage of transactions marked as isFraud.",
+            statistic_definition="FRAUD_DATASET_METADATA: Global percentage of transactions marked as isFraud. Note: This should NOT be used to calibrate legitimate normal world behavior.",
             externally_reported=True,
         )
     ]

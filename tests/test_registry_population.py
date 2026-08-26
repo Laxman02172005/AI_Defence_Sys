@@ -13,8 +13,8 @@ def test_registry_population_validates():
     
     # Verify dataset population
     assert len(reg.datasets) == 2
-    assert reg.get_dataset("paysim_v1") is not None
-    assert reg.get_dataset("ieee_cis_fraud") is not None
+    assert reg.get_dataset("paysim_kaggle_v1") is not None
+    assert reg.get_dataset("ieee_cis_fraud_v1") is not None
     
     # Verify feature count and tier diversity
     features = reg.features
@@ -31,7 +31,7 @@ def test_registry_population_validates():
     
     # Verify reference stats
     stat = reg.get_reference_statistic("stat_paysim_fraud_rate")
-    assert stat.source_dataset_id == "paysim_v1"
+    assert stat.source_dataset_id == "paysim_kaggle_v1"
     assert stat.externally_reported is True
 
 

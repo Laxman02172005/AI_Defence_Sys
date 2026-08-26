@@ -9,39 +9,39 @@ proper citation may be stored.
 
 ---
 
-## 1. PaySim (Synthetic Mobile Money Simulator)
+## 1. PaySim Dataset (Kaggle ealaxi/paysim1)
 
 | Field | Value |
 |-------|-------|
-| **ID** | `paysim_v1` |
+| **ID** | `paysim_kaggle_v1` |
 | **Source Type** | `SYNTHETIC_RESEARCH_DATASET` |
-| **URL** | https://www.kaggle.com/datasets/ealaxi/paysim1 |
-| **Access** | Kaggle download (free account) |
+| **URL** | https://www.kaggle.com/datasets/ealaxi/paysim1/data |
+| **Access** | Kaggle CSV Download |
 | **License** | CC BY-SA 4.0 |
 | **Redistribution** | Derived statistics only — raw CSV not committed |
 | **Commercial/Hackathon Use** | Permitted under CC BY-SA 4.0 with attribution |
 | **Citation Required** | Yes |
 | **Citation** | Lopez-Rojas, Elmir, Axelsson. "PaySim: A financial mobile money simulator for fraud detection" (2016) |
-| **Used For** | Transaction amount distributions, transaction type frequencies, temporal patterns, balance dynamics |
-| **Known Limitations** | Synthetic origin — does not capture real-world tail behavior, merchant diversity, multi-currency, or real geographic patterns. Agent-based model may produce artifacts not present in real payment systems. Limited transaction types (CASH_IN, CASH_OUT, DEBIT, PAYMENT, TRANSFER). No device/session/channel data. |
+| **Used For** | Transaction amount distributions, transaction type frequencies, temporal patterns, balance dynamics (Filtered for LEGITIMATE non-fraud transactions to calibrate baseline). |
+| **Known Limitations** | Synthetic origin — does not capture real-world tail behavior, merchant diversity, multi-currency, or real geographic patterns. Agent-based model may produce artifacts not present in real payment systems. Limited transaction types. No device/session/channel data. |
 
 ---
 
-## 2. IEEE-CIS Fraud Detection Dataset
+## 2. IEEE-CIS Fraud Detection (Kaggle Competition)
 
 | Field | Value |
 |-------|-------|
-| **ID** | `ieee_cis_v1` |
-| **Source Type** | `REAL_WORLD_RESEARCH` (anonymized/transformed real transactions) |
-| **URL** | https://www.kaggle.com/c/ieee-fraud-detection |
-| **Access** | Kaggle competition download (requires rule acceptance) |
-| **License** | Kaggle competition rules — research use permitted |
+| **ID** | `ieee_cis_fraud_v1` |
+| **Source Type** | `REAL_WORLD_PRODUCTION` (anonymized/transformed real transactions) |
+| **URL** | https://www.kaggle.com/c/ieee-fraud-detection/data |
+| **Access** | Kaggle Competition Agreement (Authentication Required) |
+| **License** | Subject to Kaggle Competition Rules |
 | **Redistribution** | Derived statistics only — raw data NOT committed |
-| **Commercial/Hackathon Use** | Research/educational use per competition rules |
+| **Commercial/Hackathon Use** | Competition use per rules |
 | **Citation Required** | Yes |
 | **Citation** | IEEE Computational Intelligence Society + Vesta Corporation (2019) |
-| **Used For** | Device fingerprint diversity, card-present vs card-not-present patterns, product/category distributions |
-| **Known Limitations** | Heavily anonymized — many V-features have no semantic meaning. USD only. US-centric. Competition data may have selection bias. No session/login data. No beneficiary data. Transformed amounts may not reflect true distribution. |
+| **Used For** | Device categorical attributes, relative timedelta features |
+| **Known Limitations** | TransactionDT is relative, not a wall-clock timestamp. Heavily anonymized — many V-features have no semantic meaning. USD only. US-centric. Competition data may have selection bias. No session/login data. No beneficiary data. |
 
 ---
 
