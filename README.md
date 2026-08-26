@@ -40,10 +40,35 @@ pytest tests/ -v
 ## Project Status
 
 - [x] Stage 1: Repository & environment inspection
-- [ ] Stage 2.1: Entity schemas
-- [ ] Stage 2.2: Event schemas
-- [ ] Stage 2.3: Observable / ground-truth separation
-- [ ] Stage 2.4: Provenance models
-- [ ] Stage 2.5: Calibration metric models
-- [ ] Stage 2.6: Registry integration
-- [ ] Stage 3+: See implementation plan
+- [x] Stage 2.1: Entity schemas
+- [x] Stage 2.2: Event schemas
+- [x] Stage 2.3: Observable / ground-truth separation
+- [x] Stage 2.4: Provenance models
+- [x] Stage 2.5: Calibration metric models
+- [x] Stage 2.6: Registry integration
+- [x] Stage 3: Feature / Dataset Registry Population
+- [ ] Stage 4+: See implementation plan
+
+## Registry Configuration
+
+The single source of truth for the system's calibration and metadata configuration is the `ProvenanceRegistry`. 
+
+### Datasets
+- **PaySim (`paysim_v1`)**: Used for numerical transaction distributions and category mapping. CC BY 4.0.
+- **IEEE-CIS Fraud Detection (`ieee_cis_fraud`)**: Used for categorical device distributions. Kaggle Rules.
+
+### Provenance Tiers
+Features are strictly categorized to prevent unsupported data claims:
+- **`TIER_1_LEARNED`**: Empirically learned directly from raw reference data (e.g., transaction amounts).
+- **`TIER_2_DERIVED`**: Computed through explicit derivation rules applied to raw features (e.g., average typical amount).
+- **`TIER_3_DOMAIN_MODELED`**: Synthetically generated based on domain assumptions (e.g., long-term beneficiary relationships), as these are missing from public data.
+
+### Calibration Modes
+- **`RAW_DATA`**: Computed by our pipeline using locally available reference data.
+- **`REFERENCE_STATISTICS`**: Sourced from published papers or reports (requires citation).
+
+### Known Limitations
+- The realism of the generated data is bounded by the public datasets used for calibration.
+- PaySim does not capture real-world tail behavior or complex multi-currency geography.
+- IEEE-CIS device information is hashed/obfuscated, limiting exact categorical recovery.
+- Long-term behavioral state (like beneficiary graphs over years) is domain-modeled rather than learned, due to lack of public telemetry spanning long durations.
