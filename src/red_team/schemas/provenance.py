@@ -161,6 +161,7 @@ class FeatureProvenance(BaseModel):
 class ReferenceStatistic(BaseModel):
     """An independently calculated or externally published reference statistic."""
 
+    id: str = Field(..., min_length=1, description="Unique statistic identifier.")
     statistic_name: str = Field(..., min_length=1, description="Name of the statistic.")
     value: Any = Field(..., description="Statistic value (float, dict, list).")
     source_dataset_id: str | None = Field(

@@ -258,6 +258,7 @@ def test_feature_provenance_duplicate_source_datasets():
 
 def test_reference_statistic_valid_internal():
     rs = ReferenceStatistic(
+        id="rs-001",
         statistic_name="avg_amount",
         value=100.0,
         source="Internal Team",
@@ -269,6 +270,7 @@ def test_reference_statistic_valid_internal():
 
 def test_reference_statistic_valid_external():
     rs = ReferenceStatistic(
+        id="rs-002",
         statistic_name="fraud_rate",
         value=0.01,
         source="Industry Report 2024",
@@ -282,6 +284,7 @@ def test_reference_statistic_valid_external():
 def test_reference_statistic_external_missing_citation():
     with pytest.raises(ValidationError, match="Externally reported statistics require a citation"):
         ReferenceStatistic(
+            id="rs-003",
             statistic_name="fraud_rate",
             value=0.01,
             source="Industry Report 2024",
@@ -292,6 +295,7 @@ def test_reference_statistic_external_missing_citation():
 
 def test_reference_statistic_serialization_roundtrip():
     rs = ReferenceStatistic(
+        id="rs-004",
         statistic_name="fraud_rate",
         value={"high_risk": 0.05, "low_risk": 0.001},
         source="Internal Team",
