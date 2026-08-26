@@ -61,6 +61,20 @@ class NormalWorld:
             d_id = rng.choice(dev_list)
             self.state.customer_devices[c_id] = [d_id]
             
+        # Sync to graph
+        for c in custs:
+            self.state.graph.add_entity("customer", c.customer_id)
+        for a in accts:
+            self.state.graph.add_entity("account", a.account_id)
+        for d in devs:
+            self.state.graph.add_entity("device", d.device_id)
+        for m in merchs:
+            self.state.graph.add_entity("merchant", m.merchant_id)
+        for b in bens:
+            self.state.graph.add_entity("beneficiary", b.beneficiary_id)
+        for r in rels:
+            self.state.graph.add_relationship(r)
+            
     def generate_legitimate_events(self, num_events: int = 1000) -> None:
         """Generate a chronological sequence of legitimate events."""
         logger.info(f"Generating {num_events} legitimate events.")
