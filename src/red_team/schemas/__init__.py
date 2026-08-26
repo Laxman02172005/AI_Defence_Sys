@@ -23,6 +23,24 @@ from red_team.schemas.events import (
     SessionEventPayload,
     TransactionEventPayload,
 )
+from red_team.schemas.ground_truth import (
+    AttackGroundTruth,
+    AttackPhaseRecord,
+    EvaluationMetadata,
+    GenerationMetadata,
+    PlannerMetadata,
+)
+from red_team.schemas.observable import (
+    ObservableAccountContextEvent,
+    ObservableAttackTrace,
+    ObservableBeneficiaryEvent,
+    ObservableDeviceEvent,
+    ObservableEvent,
+    ObservableRelationshipEvent,
+    ObservableSessionEvent,
+    ObservableTransactionEvent,
+    extract_observable,
+)
 
 __all__ = [
     # Entities (Stage 2.1)
@@ -46,4 +64,20 @@ __all__ = [
     "RelationshipEventPayload",
     "SessionEventPayload",
     "TransactionEventPayload",
+    # Observable (Stage 2.3)
+    "ObservableAccountContextEvent",
+    "ObservableAttackTrace",
+    "ObservableBeneficiaryEvent",
+    "ObservableDeviceEvent",
+    "ObservableEvent",
+    "ObservableRelationshipEvent",
+    "ObservableSessionEvent",
+    "ObservableTransactionEvent",
+    "extract_observable",
+    # Ground Truth (Stage 2.3)
+    "AttackGroundTruth",
+    "AttackPhaseRecord",
+    "EvaluationMetadata",
+    "GenerationMetadata",
+    "PlannerMetadata",
 ]
