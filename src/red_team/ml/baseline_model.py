@@ -19,7 +19,7 @@ from sklearn.metrics import (
 
 # Forbidden columns
 FORBIDDEN = {'proxy_entity', 'card_addr_email', 'TransactionID', 'isFraud', 'target_ProductCD', 'TransactionDT', 'TransactionAmt'}
-CLASSES = ['W', 'C', 'R', 'H', 'S']
+CLASSES = ['C', 'H', 'R', 'S', 'W']
 
 def evaluate(y_true, y_pred, labels=CLASSES) -> Dict[str, Any]:
     return {
