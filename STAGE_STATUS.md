@@ -286,12 +286,33 @@ Next stage allowed: YES, conditional on exclusion rule being implemented
 ---
 
 ### IEEE-CIS Stage 4.5F
-Status: NOT STARTED
-Completed on: N/A
-Commit: N/A
+Status: COMPLETED
+Completed on: 2026-08-27
+Commit: 53e5cd1
 Scope: Rebuild supervised dataset using the approved proxy/objective and retrain the corrected baseline
-Evidence: N/A — not started
-Prerequisite(s): IEEE-CIS Stage 4.5E
+Evidence: reports/stage_4_5F_results.md; models/normal_behavior/logistic_regression_v2/
+Result: Dataset rebuilt with Stage 4.5E Addendum exclusion rule applied
+  (100 entities / 30,023 rows excluded; 539,854 rows retained). Manifest
+  leakage from v1 caught and fixed (imputation stats regenerated from v2
+  train split only). Corrected model: Macro F1 = 0.6790, Balanced
+  Accuracy = 0.6372. Majority-class baseline for v2: 0.1810.
+  NAIVE DOMAIN BASELINE ("predict previous_ProductCD"): Macro F1 = 0.7508
+  — outperforms the trained model by ~0.07 F1 on identical test split.
+Integration decision: DO NOT INTEGRATE. Per standing ML strategy (item 8:
+  "ML performance alone must not justify a modeling decision"), the
+  corrected model fails to beat a one-line domain heuristic on its own
+  training/eval population, and its applicability to the Normal World's
+  synthetic personas (a distinct population from IEEE-CIS proxy entities)
+  was never validated. The Normal World should NOT adopt this ML
+  pipeline for next-transaction-category prediction.
+Prerequisite(s): IEEE-CIS Stage 4.5E Addendum
 Dependency role: DOWNSTREAM
-Next stage: TBD — determined by Stage 4.5F acceptance report
-Next stage allowed: NO
+Next stage: Normal World behavior update — evaluate adopting the naive
+  previous_ProductCD-persistence rule (or an equivalent domain-modeled
+  persistence mechanism) in place of the current stateless
+  rng.choices(["purchase","transfer"]) weighting, since it outperformed
+  ML at near-zero implementation cost. This is a SEPARATE, smaller gate
+  from Blue Team / LLM planner work.
+Next stage allowed: YES — scoped to the Normal World persistence-rule
+  evaluation above. Blue Team / LLM planner stages remain NOT unblocked
+  by this closeout and require their own separate readiness review.
