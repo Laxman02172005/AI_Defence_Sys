@@ -259,6 +259,32 @@ Next stage allowed: NO
 
 ---
 
+### IEEE-CIS Stage 4.5E Addendum
+Status: COMPLETED (CONDITIONAL)
+Completed on: 2026-08-27
+Commit: (Pending Review / Uncommitted)
+Scope: Validate COMPOSITE_PAYMENT_CONTEXT_BEHAVIOR as a defensible fallback objective
+Evidence: reports/stage_4_5E_addendum.md (Revision + Section 6 + AMBIGUOUS profiling)
+Verdict: CONDITIONAL — proxy is defensible for the majority of entities,
+  EXCLUDING entities matching the rule:
+    device_match_rate >= 0.50 AND top3_known_device_coverage < 0.60
+  This rule-based exclusion (not a size cutoff) removes 100 entities /
+  30,023 rows (~5.3% of the 569,877-row legitimate corpus) confirmed as
+  diffuse-gateway traffic via empirical drilldown.
+  AMBIGUOUS entities (398 / 16,645 rows, ~2.9%) are RETAINED based on
+  ASSUMPTION-tier structural reasoning (small-N device-usage profile
+  resembling shared-but-coherent contexts), not the same empirical bar
+  applied to CONFIRMED_DIFFUSE/CONFIRMED_STABLE. Flagged for revisit if
+  Stage 4.5F model behavior suggests this population is problematic.
+Required for Stage 4.5F: dataset construction MUST apply the exclusion
+  rule above before building the supervised sequence dataset.
+Prerequisite(s): IEEE-CIS Stage 4.5E
+Dependency role: DOWNSTREAM
+Next stage: IEEE-CIS Stage 4.5F
+Next stage allowed: YES, conditional on exclusion rule being implemented
+
+---
+
 ### IEEE-CIS Stage 4.5F
 Status: NOT STARTED
 Completed on: N/A
