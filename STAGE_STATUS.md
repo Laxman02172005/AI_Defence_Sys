@@ -243,18 +243,18 @@ Next stage allowed: NO
 ---
 
 ### IEEE-CIS Stage 4.5E
-Status: NOT STARTED
-Completed on: N/A
-Commit: N/A
+Status: COMPLETED
+Completed on: 2026-08-27
+Commit: 38ae50c
 Scope: IEEE-CIS Behavioral Proxy Redesign / Construct-Validity Correction
-Evidence: N/A — not started
+Evidence: `data/reference/ml_sequence/proxy_specification.json`; NO_DEFENSIBLE_INDIVIDUAL_PROXY = YES; Fallback: PAYMENT-INSTRUMENT BEHAVIOR
 Prerequisite(s): 
 - IEEE-CIS Stage 4.5A
 - IEEE-CIS Stage 4.5B
 - IEEE-CIS Stage 4.5C
 - IEEE-CIS Stage 4.5D
 Dependency role: DOWNSTREAM
-Next stage: Conditional — IEEE-CIS Stage 4.5F only if a defensible proxy/objective is approved
+Next stage: Conditional — IEEE-CIS Stage 4.5F only if the selected objective/proxy passes the acceptance decision
 Next stage allowed: NO
 
 ---
