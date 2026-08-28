@@ -209,6 +209,7 @@ Completed on: N/A
 Commit: fd75111
 Scope: Train First ML Baseline (Logistic Regression)
 Evidence: `Stage 4.5C — Train First ML Baseline` report; commit fd75111; explicitly preliminary/unapproved
+Resolution: permanent PRELIMINARY, superseded by 4.5F
 Prerequisite(s): IEEE-CIS Stage 4.5B
 Dependency role: DOWNSTREAM
 Next stage: IEEE-CIS Stage 4.5D
@@ -218,11 +219,11 @@ Next stage allowed: YES
 
 ### IEEE-CIS Stage 4.5D
 Status: COMPLETED
-Completed on: HISTORICAL RECONSTRUCTION
-Commit: N/A — sensitivity analysis was performed through scratch analysis
+Completed on: 2026-08-28
+Commit: 90ec87d
 Scope: IEEE-CIS Proxy Sensitivity Analysis
-Evidence: `STAGE 4.5D — IEEE-CIS PROXY SENSITIVITY` report; historical reconstruction
-Prerequisite(s): IEEE-CIS Stage 4.5C
+Evidence: reports/stage_4_5D_evidence.md; data/reference/ml_sequence/sensitivity_results/
+Prerequisite(s): IEEE-CIS Stage 4.5C (ARTIFACT ONLY)
 Dependency role: DOWNSTREAM
 Next stage: IEEE-CIS Stage 4.5E
 Next stage allowed: YES
@@ -251,18 +252,18 @@ Evidence: `data/reference/ml_sequence/proxy_specification.json`; NO_DEFENSIBLE_I
 Prerequisite(s): 
 - IEEE-CIS Stage 4.5A
 - IEEE-CIS Stage 4.5B
-- IEEE-CIS Stage 4.5C
+- IEEE-CIS Stage 4.5C (ARTIFACT ONLY)
 - IEEE-CIS Stage 4.5D
 Dependency role: DOWNSTREAM
 Next stage: Conditional — IEEE-CIS Stage 4.5F only if the selected objective/proxy passes the acceptance decision
-Next stage allowed: NO
+Next stage allowed: NO (directly) — gated by IEEE-CIS Stage 4.5E Addendum, which independently governs whether Stage 4.5F may begin. See Addendum entry for current status.
 
 ---
 
 ### IEEE-CIS Stage 4.5E Addendum
 Status: COMPLETED (CONDITIONAL)
 Completed on: 2026-08-27
-Commit: (Pending Review / Uncommitted)
+Commit: ea1e7f5
 Scope: Validate COMPOSITE_PAYMENT_CONTEXT_BEHAVIOR as a defensible fallback objective
 Evidence: reports/stage_4_5E_addendum.md (Revision + Section 6 + AMBIGUOUS profiling)
 Verdict: CONDITIONAL — proxy is defensible for the majority of entities,
@@ -307,12 +308,12 @@ Integration decision: DO NOT INTEGRATE. Per standing ML strategy (item 8:
   pipeline for next-transaction-category prediction.
 Prerequisite(s): IEEE-CIS Stage 4.5E Addendum
 Dependency role: DOWNSTREAM
-Next stage: Normal World behavior update — evaluate adopting the naive
-  previous_ProductCD-persistence rule (or an equivalent domain-modeled
-  persistence mechanism) in place of the current stateless
-  rng.choices(["purchase","transfer"]) weighting, since it outperformed
-  ML at near-zero implementation cost. This is a SEPARATE, smaller gate
-  from Blue Team / LLM planner work.
+Next stage: TBD — the originally proposed persistence-rule transfer
+  does not map onto the current schema (see
+  reports/project_audit_2026-08-27.md, finding 1). Requires reframing
+  around an actual Normal World field (e.g. transaction_type or
+  merchant.mcc_code persistence) before a concrete next stage can be
+  defined.
 Next stage allowed: YES — scoped to the Normal World persistence-rule
   evaluation above. Blue Team / LLM planner stages remain NOT unblocked
   by this closeout and require their own separate readiness review.
