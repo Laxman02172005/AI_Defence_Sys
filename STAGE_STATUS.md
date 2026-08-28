@@ -248,7 +248,7 @@ Status: COMPLETED
 Completed on: 2026-08-27
 Commit: 38ae50c
 Scope: IEEE-CIS Behavioral Proxy Redesign / Construct-Validity Correction
-Evidence: `data/reference/ml_sequence/proxy_specification.json`; NO_DEFENSIBLE_INDIVIDUAL_PROXY = YES; Fallback: PAYMENT-INSTRUMENT BEHAVIOR
+Evidence: `data/reference/ml_sequence/proxy_specification.json`; NO_DEFENSIBLE_INDIVIDUAL_PROXY = YES; Fallback: COMPOSITE_PAYMENT_CONTEXT_BEHAVIOR
 Prerequisite(s): 
 - IEEE-CIS Stage 4.5A
 - IEEE-CIS Stage 4.5B
