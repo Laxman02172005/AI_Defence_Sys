@@ -1,12 +1,14 @@
 """Behavioral simulator generating legitimate events based on World State."""
 
 import random
-from datetime import timedelta
+import heapq
+from datetime import timedelta, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from red_team.world.state import WorldState
 from red_team.world.persona import PersonaParameters
+from red_team.world.behavior_state import BehavioralModelConfig, CustomerBehaviorState
 from red_team.schemas.entities import Session, Transaction, Device, Relationship
 from red_team.schemas.events import (
     Event, EventEnvelope, EventType,
@@ -17,52 +19,141 @@ from red_team.schemas.events import (
 class BehavioralSimulator:
     """Simulates stateful, legitimate payment behavior."""
 
-    def __init__(self, random_seed: int, personas: List[PersonaParameters]):
+    def __init__(self, random_seed: int, personas: List[PersonaParameters], config: Optional[BehavioralModelConfig] = None):
         self.rng = random.Random(random_seed)
         self.personas = {p.segment_id: p for p in personas}
+        self.config = config or BehavioralModelConfig()
+        # Priority queue for scheduling: list of (next_event_time, customer_id)
+        self._event_queue: List[Tuple[float, str]] = []
+        self._initialized = False
 
-    def generate_next_event(self, state: WorldState) -> Optional[Event]:
-        """Generate the next legitimate event for a random customer.
+    def _initialize_states_if_needed(self, state: WorldState):
+        """Idempotently initialize customer behavioral states and the scheduling heap."""
+        if self._initialized:
+            # We must maintain the heap if new customers are added dynamically,
+            # but for now assume population is static or we just check missing
+            pass
         
-        Updates the WorldState directly if applicable (e.g. balance changes).
-        """
-        if not state.customers:
-            return None
-            
-        # 1. Pick a random customer
-        customer_id = self.rng.choice(list(state.customers.keys()))
+        needs_heapify = False
+        for customer_id, customer in state.customers.items():
+            if customer_id not in state.customer_behavior:
+                persona = self.personas[customer.behavioral_segment]
+                
+                # Initialize state
+                # Transaction type weights: DOMAIN_MODELED assumption
+                # We give them a random preference split between purchase/transfer
+                base_purchase_weight = self.rng.uniform(0.5, 1.0)
+                if persona.segment_id == "LOW_FREQUENCY":
+                    base_purchase_weight = self.rng.uniform(0.8, 1.0)
+                tx_type_weights = {
+                    "purchase": base_purchase_weight,
+                    "transfer": 1.0 - base_purchase_weight
+                }
+                
+                typical_amount_anchor = self.rng.uniform(persona.typical_amount_range[0], persona.typical_amount_range[1])
+                amount_variability = typical_amount_anchor * self.config.amount_variance_factor
+                
+                # Calculate initial next_event_time
+                avg_events_per_week = self.rng.uniform(persona.tx_frequency_per_week[0], persona.tx_frequency_per_week[1])
+                avg_gap_seconds = (7 * 24 * 3600) / max(0.1, avg_events_per_week)
+                # Random initial offset
+                initial_offset = self.rng.uniform(0, avg_gap_seconds)
+                next_time = state.current_time + timedelta(seconds=initial_offset)
+                
+                cb = CustomerBehaviorState(
+                    customer_id=customer_id,
+                    next_event_time=next_time,
+                    tx_type_weights=tx_type_weights,
+                    typical_amount_anchor=typical_amount_anchor,
+                    amount_variability=amount_variability
+                )
+                state.customer_behavior[customer_id] = cb
+                self._event_queue.append((next_time.timestamp(), customer_id))
+                needs_heapify = True
+                
+        if needs_heapify:
+            heapq.heapify(self._event_queue)
+        self._initialized = True
+
+    def _schedule_next_event(self, state: WorldState, customer_id: str):
+        """Schedule the customer's next event and push to heap."""
+        cb = state.customer_behavior[customer_id]
         customer = state.customers[customer_id]
         persona = self.personas[customer.behavioral_segment]
         
-        # 2. Advance time a small logical step (simulates chronological generation)
-        state.advance_time(self.rng.randint(60, 3600))
+        avg_events_per_week = self.rng.uniform(persona.tx_frequency_per_week[0], persona.tx_frequency_per_week[1])
+        avg_gap_seconds = (7 * 24 * 3600) / max(0.1, avg_events_per_week)
         
-        # 3. Drift: Occasional new device or relationship (1% chance)
-        if self.rng.random() < 0.01:
-            return self._generate_drift_event(state, customer_id)
+        # Check burst
+        if not cb.in_burst and self.rng.random() < self.config.burst_prob:
+            cb.in_burst = True
+            cb.burst_events_remaining = self.rng.randint(2, 5)
             
-        # 4. Standard Behavior: Session + Transaction
-        # Are they in an active session?
-        if customer_id not in state.active_sessions:
-            return self._generate_session_login(state, customer_id)
-        
-        session = state.active_sessions[customer_id]
-        
-        # If in session, maybe transact or logout
-        action_choice = self.rng.choices(["transact", "logout"], weights=[0.8, 0.2])[0]
-        
-        if action_choice == "logout":
-            return self._generate_session_logout(state, customer_id)
+        if cb.in_burst:
+            gap_seconds = avg_gap_seconds * self.config.burst_time_multiplier
+            cb.burst_events_remaining -= 1
+            if cb.burst_events_remaining <= 0:
+                cb.in_burst = False
         else:
-            return self._generate_transaction(state, customer_id, persona)
+            # Exponential distribution around mean for normal gaps
+            gap_seconds = self.rng.expovariate(1.0 / avg_gap_seconds)
+            
+        next_time = state.current_time + timedelta(seconds=gap_seconds)
+        cb.next_event_time = next_time
+        heapq.heappush(self._event_queue, (next_time.timestamp(), customer_id))
+
+    def generate_next_event(self, state: WorldState) -> Optional[Event]:
+        """Generate the next legitimate event by pulling from the scheduling heap."""
+        if not state.customers:
+            return None
+            
+        self._initialize_states_if_needed(state)
+        
+        if not self._event_queue:
+            return None
+            
+        # Pop the earliest customer
+        ts, customer_id = heapq.heappop(self._event_queue)
+        next_time = datetime.fromtimestamp(ts)
+        
+        # Advance global time to this customer's next event
+        if next_time > state.current_time:
+            delta = (next_time - state.current_time).total_seconds()
+            state.advance_time(int(delta))
+            
+        customer = state.customers[customer_id]
+        persona = self.personas[customer.behavioral_segment]
+        
+        # Decide action type
+        if self.rng.random() < self.config.drift_prob:
+            event = self._generate_drift_event(state, customer_id)
+        else:
+            if customer_id not in state.active_sessions:
+                event = self._generate_session_login(state, customer_id)
+            else:
+                action_choice = self.rng.choices(["transact", "logout"], weights=[0.8, 0.2])[0]
+                if action_choice == "logout":
+                    event = self._generate_session_logout(state, customer_id)
+                else:
+                    event = self._generate_transaction(state, customer_id, persona)
+                    
+        # If generation failed (e.g. no accounts), event might be None. Still schedule next.
+        self._schedule_next_event(state, customer_id)
+        return event
 
     def _generate_session_login(self, state: WorldState, customer_id: str) -> Event:
-        # Pick a device if they have one mapped, else create a generic one mapping
-        devices = state.customer_devices.get(customer_id)
+        cb = state.customer_behavior[customer_id]
+        
         device_id = None
-        if devices:
-            device_id = self.rng.choice(devices)
-            
+        if cb.primary_device_id and self.rng.random() < self.config.device_reuse_prob:
+            device_id = cb.primary_device_id
+        else:
+            # Pick alternate or primary if none exists
+            devices = state.customer_devices.get(customer_id)
+            if devices:
+                device_id = self.rng.choice(devices)
+                cb.primary_device_id = device_id
+                
         session = Session(
             customer_id=customer_id,
             device_id=device_id,
@@ -96,18 +187,22 @@ class BehavioralSimulator:
         return Event(envelope=envelope, payload=payload)
 
     def _generate_transaction(self, state: WorldState, customer_id: str, persona: PersonaParameters) -> Optional[Event]:
-        # Find accounts
+        cb = state.customer_behavior[customer_id]
+        
         customer_accts = [a for a in state.accounts.values() if a.customer_id == customer_id]
         if not customer_accts:
             return None
         account = self.rng.choice(customer_accts)
-        
         session = state.active_sessions[customer_id]
         
-        # Decide type (purchase vs transfer)
-        tx_type = self.rng.choices(["purchase", "transfer"], weights=[0.8, 0.2])[0]
+        # Decide type (purchase vs transfer) based on personalized weights
+        types = list(cb.tx_type_weights.keys())
+        weights = list(cb.tx_type_weights.values())
+        tx_type = self.rng.choices(types, weights=weights)[0]
         
-        amount_val = self.rng.uniform(persona.typical_amount_range[0], persona.typical_amount_range[1])
+        # Statefully anchored amount (Gaussian around anchor)
+        amount_val = self.rng.gauss(cb.typical_amount_anchor, cb.amount_variability)
+        amount_val = max(1.0, amount_val) # prevent negative/zero amounts
         amount = Decimal(str(round(amount_val, 2)))
         
         merchant_id = None
@@ -116,13 +211,22 @@ class BehavioralSimulator:
         if tx_type == "purchase" and state.merchants:
             merchant_id = self.rng.choice(list(state.merchants.keys()))
         elif tx_type == "transfer" and state.beneficiaries:
-            # Pick from related beneficiaries if possible
-            rels = [r for r in state.relationships.values() 
-                    if r.source_entity_id == customer_id and r.target_entity_type == "beneficiary"]
-            if rels:
-                beneficiary_id = self.rng.choice(rels).target_entity_id
+            # Stateful beneficiary selection
+            if cb.beneficiary_affinities and self.rng.random() < self.config.beneficiary_reuse_prob:
+                # Reuse known beneficiary
+                b_ids = list(cb.beneficiary_affinities.keys())
+                b_weights = list(cb.beneficiary_affinities.values())
+                beneficiary_id = self.rng.choices(b_ids, weights=b_weights)[0]
+                cb.beneficiary_affinities[beneficiary_id] += 1
             else:
-                beneficiary_id = self.rng.choice(list(state.beneficiaries.keys()))
+                # Find new beneficiary
+                rels = [r for r in state.relationships.values() 
+                        if r.source_entity_id == customer_id and r.target_entity_type == "beneficiary"]
+                if rels:
+                    beneficiary_id = self.rng.choice(rels).target_entity_id
+                else:
+                    beneficiary_id = self.rng.choice(list(state.beneficiaries.keys()))
+                cb.beneficiary_affinities[beneficiary_id] = cb.beneficiary_affinities.get(beneficiary_id, 0) + 1
         else:
             return None
             
@@ -173,6 +277,11 @@ class BehavioralSimulator:
         if customer_id not in state.customer_devices:
             state.customer_devices[customer_id] = []
         state.customer_devices[customer_id].append(device.device_id)
+        
+        # Update stateful primary device optionally
+        cb = state.customer_behavior[customer_id]
+        if cb.primary_device_id is None:
+            cb.primary_device_id = device.device_id
         
         envelope = EventEnvelope(
             timestamp=state.current_time,

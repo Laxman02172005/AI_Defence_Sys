@@ -14,7 +14,7 @@ from red_team.schemas.entities import (
     Session,
 )
 from red_team.schemas.events import Event
-
+from red_team.world.behavior_state import CustomerBehaviorState
 
 class WorldState(BaseModel):
     """The authoritative state of the Normal World simulation."""
@@ -28,6 +28,8 @@ class WorldState(BaseModel):
     merchants: Dict[str, Merchant] = Field(default_factory=dict)
     beneficiaries: Dict[str, Beneficiary] = Field(default_factory=dict)
     relationships: Dict[str, Relationship] = Field(default_factory=dict)
+    
+    customer_behavior: Dict[str, CustomerBehaviorState] = Field(default_factory=dict)
     
     # Active sessions keyed by customer_id
     active_sessions: Dict[str, Session] = Field(default_factory=dict)
