@@ -18,7 +18,9 @@ def test_valid_trace():
     customer_id = list(world.get_state().customers.keys())[0]
     
     plan = AttackPlan(attack_family="ACCOUNT_TAKEOVER", difficulty="medium")
-    sim = StatefulSimulator(world.get_state(), get_ato_signature(), seed=42)
+    import copy
+    state_copy = copy.deepcopy(world.get_state())
+    sim = StatefulSimulator(state_copy, get_ato_signature(), seed=42)
     trace, gt = sim.generate_attack(plan, customer_id)
     
     report = validate_attack_realism(trace, gt, get_ato_signature(), world.get_state())
