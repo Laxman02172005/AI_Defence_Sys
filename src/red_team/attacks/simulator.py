@@ -11,6 +11,7 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Literal, Any
 from pydantic import BaseModel, Field
+from decimal import Decimal
 
 from red_team.world.state import WorldState
 from red_team.attacks.signature_library import AttackSignature, Observability
@@ -42,12 +43,61 @@ class AttackPlan(BaseModel):
     max_simulation_duration_minutes: int = 1440
 
 
+class VariationProfile(BaseModel):
+    # DOMAIN_MODELED parameter scales
+    timing_type: Literal["RAPID", "NORMAL", "SLOW", "BURSTY"]
+    device_new_prob: float
+    beneficiary_new_prob: float
+    amount_scale: Tuple[float, float]
+    splits: Tuple[int, int]
+    end_early_prob: float = 0.0
+    loop_prob_mult: float = 1.0
+    
+    # APP-specific Social Engineering dimensions
+    app_hesitation_prob: float = 0.0
+    app_retry_prob: float = 0.0
+    app_amount_trend: Literal["flat", "escalating", "fragmented", "decreasing"] = "flat"
+
+
+DIFFICULTY_PROFILES = {
+    # EASY: Fast, all new entities, large amounts, no splitting, eager to finish
+    "easy": VariationProfile(
+        timing_type="RAPID", device_new_prob=1.0, beneficiary_new_prob=1.0, 
+        amount_scale=(0.8, 1.0), splits=(1, 1), end_early_prob=0.3, loop_prob_mult=0.5,
+        app_hesitation_prob=0.0, app_retry_prob=0.0, app_amount_trend="flat"
+    ),
+    # MEDIUM: Normal speed, mostly new, moderate amounts, occasional split
+    "medium": VariationProfile(
+        timing_type="NORMAL", device_new_prob=0.8, beneficiary_new_prob=0.8, 
+        amount_scale=(0.4, 0.7), splits=(1, 2), end_early_prob=0.1, loop_prob_mult=1.0,
+        app_hesitation_prob=0.3, app_retry_prob=0.2, app_amount_trend="escalating"
+    ),
+    # HARD: Slow speed, reuses entities to blend in, small amounts, split up, avoids ending
+    "hard": VariationProfile(
+        timing_type="SLOW", device_new_prob=0.4, beneficiary_new_prob=0.3, 
+        amount_scale=(0.1, 0.3), splits=(2, 3), end_early_prob=0.0, loop_prob_mult=2.0,
+        app_hesitation_prob=0.7, app_retry_prob=0.5, app_amount_trend="fragmented"
+    ),
+    # ADVANCED: Bursty timing, almost entirely reuses entities, random amounts, many splits, high loops
+    "advanced": VariationProfile(
+        timing_type="BURSTY", device_new_prob=0.1, beneficiary_new_prob=0.1, 
+        amount_scale=(0.2, 0.9), splits=(3, 5), end_early_prob=0.0, loop_prob_mult=3.0,
+        app_hesitation_prob=0.5, app_retry_prob=0.8, app_amount_trend="decreasing"
+    ),
+}
+
+
 class StatefulSimulator:
     def __init__(self, state: WorldState, signature: AttackSignature, seed: int):
         self.state = state
         self.signature = signature
-        self.seed = seed
-        self.rng = random.Random(seed)
+        
+        # IMPLEMENTED FIX: Salt the seed deterministically using the attack family
+        salt_str = f"{seed}_{getattr(signature, 'attack_family', 'UNKNOWN')}"
+        salted_seed = int(hashlib.sha256(salt_str.encode()).hexdigest()[:15], 16)
+        
+        self.seed = salted_seed
+        self.rng = random.Random(self.seed)
         
         self.generated_events: List[Event] = []
         self.phase_records: List[AttackPhaseRecord] = []
@@ -65,6 +115,8 @@ class StatefulSimulator:
             
         attack_id = f"atk-{self._generate_event_id()[:8]}"
         
+        self.profile = DIFFICULTY_PROFILES[plan.difficulty]
+        
         # 1. Determine entry state
         current_state_name = plan.entry_state
         if not current_state_name:
@@ -74,18 +126,32 @@ class StatefulSimulator:
         events_generated = 0
         start_time = self.state.current_time
         
-        # Current active components specific to this attacker session
         attacker_session: Optional[Session] = None
         attacker_device: Optional[Device] = None
         attacker_beneficiary: Optional[Beneficiary] = None
         
+        # Enforce APP constraint: must use known primary device
+        if plan.attack_family == "AUTHORIZED_PUSH_PAYMENT":
+            known_devices = []
+            for r in self.state.relationships.values():
+                if r.source_entity_id == customer_id and r.target_entity_type == "device":
+                    d_id = r.target_entity_id
+                    if d_id in self.state.devices:
+                        known_devices.append(self.state.devices[d_id])
+            if known_devices:
+                attacker_device = known_devices[0]
+        
+        max_duration = plan.max_simulation_duration_minutes
+        if self.profile.timing_type == "SLOW":
+            max_duration = 1440 * 7 # DOMAIN_MODELED: 7 days to permit slow multi-phase attacks
+            
         while current_state_name != "END":
             # Safety limits
             if phases_executed >= plan.max_phases:
                 break
             if events_generated >= plan.max_events:
                 break
-            if (self.state.current_time - start_time).total_seconds() / 60 > plan.max_simulation_duration_minutes:
+            if (self.state.current_time - start_time).total_seconds() / 60 > max_duration:
                 break
                 
             phases_executed += 1
@@ -93,18 +159,35 @@ class StatefulSimulator:
             
             phase_start = self.state.current_time
             
-            # 2. Generate Events for the phase
-            # For this mock simulator, we statically map consequences to simple events
-            for consequence in attack_state.observable_consequences:
-                # Basic event synthesis
-                self.state.advance_time(self.rng.randint(5, 60))  # Advance time slightly
+            # DOMAIN_MODELED: Timing scale based on difficulty
+            if self.profile.timing_type == "RAPID":
+                gap = self.rng.randint(1, 10) * 60
+            elif self.profile.timing_type == "NORMAL":
+                gap = self.rng.randint(30, 120) * 60
+            elif self.profile.timing_type == "SLOW":
+                gap = self.rng.randint(720, 1440) * 60
+            elif self.profile.timing_type == "BURSTY":
+                if self.rng.random() < 0.2:
+                    gap = self.rng.randint(1440, 2880) * 60 # 1-2 days
+                else:
+                    gap = self.rng.randint(1, 10) * 60 # burst
+            else:
+                gap = 60
                 
+            # STAGE 28: APP Hesitation 
+            if plan.attack_family == "AUTHORIZED_PUSH_PAYMENT" and current_state_name == "PAYMENT_EXECUTION":
+                if self.rng.random() < self.profile.app_hesitation_prob:
+                    # Inject hesitation (10 minutes to 2 hours)
+                    gap += self.rng.randint(600, 7200)
+                
+            self.state.advance_time(gap)
+            
+            for consequence in attack_state.observable_consequences:
                 new_events = self._synthesize_events_for_consequence(
                     consequence, customer_id, attacker_device, attacker_session, attacker_beneficiary
                 )
                 
                 for ev in new_events:
-                    # Update references if they were created
                     payload = ev.payload
                     if isinstance(payload, DeviceEventPayload) and payload.action == "register":
                         attacker_device = payload.device
@@ -124,10 +207,17 @@ class StatefulSimulator:
             if not transitions:
                 break
                 
-            # Sample weights
+            # Bias weights based on difficulty
             weights = []
             for t in transitions:
                 w = self.rng.uniform(t.min_weight, t.max_weight)
+                if t.target_state == "END":
+                    # Easy might end early, hard avoids ending
+                    w *= (1.0 + self.profile.end_early_prob)
+                    if self.profile.end_early_prob == 0.0:
+                        w *= 0.5 
+                elif t.target_state == current_state_name:
+                    w *= self.profile.loop_prob_mult
                 weights.append(w)
                 
             total_w = sum(weights)
@@ -136,7 +226,6 @@ class StatefulSimulator:
                 
             normalized = [w / total_w for w in weights]
             
-            # Create phase record before transitioning
             r = self.rng.random()
             cumulative = 0.0
             next_state_name = "END"
@@ -146,7 +235,6 @@ class StatefulSimulator:
                     next_state_name = t.target_state
                     break
             
-            # Determine if phase was optional (simplistic check: can access skip it?)
             was_optional = False
             
             self.phase_records.append(
@@ -161,13 +249,10 @@ class StatefulSimulator:
             
             current_state_name = next_state_name
 
-        # Finalize
         if not self.generated_events:
             raise ValueError("Attack generated zero events")
 
-        # Create Output Artifacts
         trace = extract_observable(self.generated_events, trace_id=attack_id)
-        
         ground_truth = self._create_ground_truth(attack_id, plan)
         
         return trace, ground_truth
@@ -176,11 +261,22 @@ class StatefulSimulator:
         self, consequence, customer_id: str, 
         device: Optional[Device], session: Optional[Session], beneficiary: Optional[Beneficiary]
     ) -> List[Event]:
-        """Synthesize specific valid events based on consequence description."""
         events = []
         
         # Recon / Access -> Session/Device
         if "device" in consequence.affected_entities or "session" in consequence.affected_entities:
+            # DOMAIN_MODELED: Device selection
+            if device is None:
+                if self.rng.random() >= self.profile.device_new_prob:
+                    known_devices = []
+                    for r in self.state.relationships.values():
+                        if r.source_entity_id == customer_id and r.target_entity_type == "device":
+                            d_id = r.target_entity_id
+                            if d_id in self.state.devices:
+                                known_devices.append(self.state.devices[d_id])
+                    if known_devices:
+                        device = self.rng.choice(known_devices)
+                        
             if device is None:
                 device = Device(
                     device_id=self._generate_event_id(),
@@ -191,7 +287,6 @@ class StatefulSimulator:
                     is_trusted=False
                 )
                 self.state.devices[device.device_id] = device
-                
                 env = EventEnvelope(
                     event_id=self._generate_event_id(),
                     timestamp=self.state.current_time,
@@ -211,7 +306,6 @@ class StatefulSimulator:
                     auth_success=True
                 )
                 self.state.active_sessions[customer_id] = session
-                
                 env = EventEnvelope(
                     event_id=self._generate_event_id(),
                     timestamp=self.state.current_time,
@@ -224,6 +318,18 @@ class StatefulSimulator:
                 
         # Modification -> Beneficiary/Context
         elif "beneficiary" in consequence.affected_entities and not "transaction" in consequence.affected_entities:
+            # DOMAIN_MODELED: Beneficiary Selection
+            if beneficiary is None:
+                if self.rng.random() >= self.profile.beneficiary_new_prob:
+                    known_bens = []
+                    for r in self.state.relationships.values():
+                        if r.source_entity_id == customer_id and r.target_entity_type == "beneficiary":
+                            b_id = r.target_entity_id
+                            if b_id in self.state.beneficiaries:
+                                known_bens.append(self.state.beneficiaries[b_id])
+                    if known_bens:
+                        beneficiary = self.rng.choice(known_bens)
+
             if beneficiary is None:
                 beneficiary = Beneficiary(
                     beneficiary_id=self._generate_event_id(),
@@ -234,7 +340,6 @@ class StatefulSimulator:
                     is_verified=False
                 )
                 self.state.beneficiaries[beneficiary.beneficiary_id] = beneficiary
-                
                 env = EventEnvelope(
                     event_id=self._generate_event_id(),
                     timestamp=self.state.current_time,
@@ -246,7 +351,6 @@ class StatefulSimulator:
         # Exploitation -> Transaction
         elif "transaction" in consequence.affected_entities:
             acct_id = None
-            # Find a checking account
             for a_id, acct in self.state.accounts.items():
                 if acct.account_type in ("checking", "savings"):
                     acct_id = a_id
@@ -255,41 +359,105 @@ class StatefulSimulator:
                 acct_id = list(self.state.accounts.keys())[0]
                 
             if acct_id:
-                from decimal import Decimal
                 acct = self.state.accounts[acct_id]
-                amt = Decimal("500.00")
-                pre_balance = acct.balance
                 
-                # Mock legitimate topup if insufficient
-                if acct.balance < amt:
-                    acct.balance += amt * 2
+                # DOMAIN_MODELED: Target amount relative to balance
+                target_pct = self.rng.uniform(self.profile.amount_scale[0], self.profile.amount_scale[1])
+                
+                # Friction/Failure: 10% chance to erroneously overestimate balance
+                if self.rng.random() < 0.1:
+                    target_pct = self.rng.uniform(1.1, 1.5)
+                    
+                if acct.balance > Decimal("50.00"):
+                    target_amt = acct.balance * Decimal(str(target_pct))
+                else:
+                    target_amt = Decimal("100.00") # flat attempt that will fail
+                    
+                target_amt = target_amt.quantize(Decimal("0.01"))
+                
+                # DOMAIN_MODELED: Transaction Splitting
+                num_splits = self.rng.randint(self.profile.splits[0], self.profile.splits[1])
+                
+                split_amts = []
+                remaining = target_amt
+                for i in range(num_splits - 1):
+                    portion = (remaining / (num_splits - i)) * Decimal(str(self.rng.uniform(0.8, 1.2)))
+                    portion = portion.quantize(Decimal("0.01"))
+                    if portion < Decimal("1.00"): portion = Decimal("1.00")
+                    split_amts.append(portion)
+                    remaining -= portion
+                split_amts.append(max(Decimal("1.00"), remaining))
+                
+                # STAGE 28: APP Amount Trends
+                if getattr(self.signature, "attack_family", "") == "AUTHORIZED_PUSH_PAYMENT":
+                    if self.profile.app_amount_trend == "escalating":
+                        split_amts.sort()
+                    elif self.profile.app_amount_trend == "decreasing":
+                        split_amts.sort(reverse=True)
+                
+                for amt in split_amts:
+                    # Optional gap between splits
+                    if num_splits > 1 and len(split_amts) > 1:
+                        self.state.advance_time(self.rng.randint(5, 60))
+                        
+                    # STAGE 28: APP Retry Behavior (Simulate Bank Decline followed by victim retry)
+                    if getattr(self.signature, "attack_family", "") == "AUTHORIZED_PUSH_PAYMENT":
+                        if self.rng.random() < self.profile.app_retry_prob:
+                            # Generate a declined transaction first
+                            fail_amt = (amt * Decimal("1.5")).quantize(Decimal("0.01"))
+                            fail_tx = Transaction(
+                                account_id=acct_id, session_id=session.session_id if session else None,
+                                amount=fail_amt, currency="USD", transaction_type="transfer" if beneficiary else "purchase",
+                                beneficiary_id=beneficiary.beneficiary_id if beneficiary else None, merchant_id=None if beneficiary else f"merch-{self._generate_event_id()[:8]}",
+                                timestamp=self.state.current_time, channel="online", status="failed"
+                            )
+                            fail_env = EventEnvelope(
+                                event_id=self._generate_event_id(), timestamp=self.state.current_time, event_type=EventType.TRANSACTION,
+                                customer_id=customer_id, account_id=acct_id, session_id=session.session_id if session else None
+                            )
+                            events.append(Event(envelope=fail_env, payload=TransactionEventPayload(
+                                transaction=fail_tx, pre_balance=acct.balance, post_balance=acct.balance
+                            )))
+                            # Brief gap as they panic/negotiate
+                            self.state.advance_time(self.rng.randint(30, 300))
+                        
                     pre_balance = acct.balance
                     
-                acct.balance -= amt
-                
-                tx = Transaction(
-                    account_id=acct_id,
-                    session_id=session.session_id if session else None,
-                    amount=amt,
-                    currency="USD",
-                    transaction_type="transfer" if beneficiary else "purchase",
-                    beneficiary_id=beneficiary.beneficiary_id if beneficiary else None,
-                    merchant_id=None if beneficiary else f"merch-{self._generate_event_id()[:8]}",
-                    timestamp=self.state.current_time,
-                    channel="online"
-                )
-                
-                env = EventEnvelope(
-                    event_id=self._generate_event_id(),
-                    timestamp=self.state.current_time,
-                    event_type=EventType.TRANSACTION,
-                    customer_id=customer_id,
-                    account_id=acct_id,
-                    session_id=session.session_id if session else None
-                )
-                events.append(Event(envelope=env, payload=TransactionEventPayload(
-                    transaction=tx, pre_balance=pre_balance, post_balance=acct.balance
-                )))
+                    if amt < Decimal("1.00"):
+                        amt = Decimal("1.00") # Enforce schema constraint > 0
+                    
+                    if acct.balance < amt:
+                        tx_status = "failed"
+                        post_balance = acct.balance
+                    else:
+                        tx_status = "completed"
+                        acct.balance -= amt
+                        post_balance = acct.balance
+                    
+                    tx = Transaction(
+                        account_id=acct_id,
+                        session_id=session.session_id if session else None,
+                        amount=amt,
+                        currency="USD",
+                        transaction_type="transfer" if beneficiary else "purchase",
+                        beneficiary_id=beneficiary.beneficiary_id if beneficiary else None,
+                        merchant_id=None if beneficiary else f"merch-{self._generate_event_id()[:8]}",
+                        timestamp=self.state.current_time,
+                        channel="online",
+                        status=tx_status
+                    )
+                    
+                    env = EventEnvelope(
+                        event_id=self._generate_event_id(),
+                        timestamp=self.state.current_time,
+                        event_type=EventType.TRANSACTION,
+                        customer_id=customer_id,
+                        account_id=acct_id,
+                        session_id=session.session_id if session else None
+                    )
+                    events.append(Event(envelope=env, payload=TransactionEventPayload(
+                        transaction=tx, pre_balance=pre_balance, post_balance=post_balance
+                    )))
                 
         return events
 
