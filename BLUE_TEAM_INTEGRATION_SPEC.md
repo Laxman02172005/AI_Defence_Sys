@@ -16,9 +16,14 @@ Attacks generate sequential observable events. The confirmed observable event ty
 The Red Team outputs datasets in the form of `AttackRecord` lists (or JSON lines). 
 
 ### 2.1 Schema Reference
-The authoritative schema definitions for the generated corpora reside exclusively in:
-**`src/red_team/attacks/corpus.py`** 
-*(Note: Do not attempt to import or reference `schemas/corpus.py`, as that path does not exist).*
+Schema definitions (the actual Pydantic models for observable traces and ground truth):
+*   `src/red_team/schemas/observable.py`
+*   `src/red_team/schemas/ground_truth.py`
+
+Corpus generation logic (the code that builds and orchestrates corpus creation, including seed derivation):
+*   `src/red_team/attacks/corpus.py`
+
+*(Note: `schemas/corpus.py` does not exist — do not reference it).*
 
 ### 2.2 The Observable Trace (Features)
 **DO USE THIS FOR FEATURE ENGINEERING AND MODEL TRAINING.**
