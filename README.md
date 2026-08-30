@@ -72,3 +72,8 @@ Features are strictly categorized to prevent unsupported data claims:
 - PaySim does not capture real-world tail behavior or complex multi-currency geography.
 - IEEE-CIS device information is hashed/obfuscated, limiting exact categorical recovery.
 - Long-term behavioral state (like beneficiary graphs over years) is domain-modeled rather than learned, due to lack of public telemetry spanning long durations.
+
+## Current Status
+- **Red Team:** FROZEN & QUALIFIED (See \RED_TEAM_HANDOFF.md\).
+- **Blue Team:** PENDING INITIALIZATION.
+
