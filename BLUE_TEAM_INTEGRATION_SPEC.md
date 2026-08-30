@@ -60,3 +60,38 @@ Represents a legitimate customer being socially engineered.
 ## 6. Known Limitations
 1.  **APP 'EASY' Diversity:** A basic, one-shot APP scam lacks structural complexity. The Red Team generator correctly refuses to manufacture fake diversity, meaning you will receive fewer mathematically unique `EASY` APP traces compared to other buckets. This reflects reality.
 2.  **No Ledger Handoff:** The full physical `WorldState` ledger is intentionally discarded after simulation. The Blue Team must construct entity graphs and historical baselines strictly from the provided `ObservableAttackTrace` events and the Normal World baseline logs.
+## 7. PRNG / Reproducibility
+- The simulator utilizes family-salted seed derivation (aw_seed + ttack_family -> SHA-256 -> andom.Random(...)). This explicitly prevents cross-family structural collisions (a bug discovered and remediated in the final stages, with regression tests permanently established at 	ests/test_stage_30_rng_isolation.py).
+- **Reproducibility Guarantee:** Same world + same AttackPlan + same family + same seed = deterministic reproduction. Conversely, a different family using the exact same raw seed will NOT produce the same stream (this is intentional, not a bug).
+
+## 8. Novelty Validation — What It Means for Blue Team
+- The Red Team's Novelty Engine is a generation-quality mechanism that strictly rejects structurally duplicate attacks, but it is scoped by **family + difficulty**.
+- **Verified Finding:** Across the persisted corpora, there are precisely **6 ATO** and **3 APP** duplicate structural fingerprints. ALL of these occur *across* different difficulty buckets; ZERO duplicates exist within the same (family, difficulty) bucket.
+- **WARNING:** The Blue Team should NOT assume every trace has a globally unique behavioral fingerprint, and should NOT attempt to reuse the Red Team's novelty/realism validators as a fraud-detection mechanism. Those are quality gates for generation, not detectors.
+
+## 9. Train/Test Splitting Guidance
+- The unit of splitting MUST be the AttackRecord (the observable_trace + ground_truth pair). Never split or shuffle individual events within a trace.
+- Do not shuffle the observable_trace and ground_truth structures independently from one another.
+- If multiple traces share a customer_id, you must consider splitting by customer/entity. Failing to do so will result in the same customer's baseline appearing in both train and test partitions, risking data leakage.
+- *Suggestion:* An 80/20 AttackRecord-level split is a standard starting point for baseline modeling.
+
+## 10. Recommended Metrics
+- **Standard:** Precision, Recall, F1, ROC-AUC, PR-AUC, Confusion Matrix.
+- **Family-Stratified:** You must report ATO metrics and APP metrics SEPARATELY, not just pooled. The two families have structurally distinct signatures (see Section 5), and a pooled metric can easily mask a detector that only succeeds on one family while completely failing the other.
+- **Difficulty-Stratified:** Report recall broken out by easy/medium/hard/advanced for each family. Frame your evaluation by asking: *"Does the detector's performance degrade as attack difficulty increases?"* That is the specific hypothesis the difficulty tiering exists to test.
+- **Sample Size Warning:** The APP-easy and ATO-easy sample sizes are physically constrained (6 and 22 traces respectively). Any difficulty-stratified metrics on these specific buckets will possess wide uncertainty bounds compared to the 25/50-sized buckets. Do not over-interpret a metric computed on 6 examples.
+
+## 11. Feature Engineering — Additional Candidates
+*(Supplementing Section 4's beneficiary-timing features)*
+- **Velocity:** 	ransactions_per_hour, 	ime_between_transactions
+- **Session:** session_duration, 	ransactions_per_session, 	ime_login_to_transaction
+- **Device:** (ATO-specific, since DEVICE_REGISTRATION is ATO-only per Section 1.1) 
+ew_device_before_transaction, 	ime_device_registration_to_transaction
+- **Failure/Retry:** ailed_transaction_count, ailed_then_completed pattern, mount_change_after_failure (highly relevant to APP's documented retry-then-lower-amount behavior)
+- **Amount Sequence:** 	rend (escalating/flat/decreasing), coefficient_of_variation, min/max/mean across a trace's transactions
+- *SUGGESTION:* This entire section represents suggested starting features derived logically from observable event structure. It is not an exhaustive set. Your actual feature baseline must come from inspecting the real corpus fields directly.
+
+## 12. Recommended First Step for Blue Team
+Before writing any feature extractors or pipelines, load one record from each corpus, print the actual observable_trace structure, and enumerate the real event and payload fields directly. Do not build solely against the illustrative examples in this document. 
+
+This document describes what was structurally true as of commit  a00858; always treat the live schema and the physical JSON records as authoritative if you suspect any drift.
