@@ -155,6 +155,8 @@ if not headline_report:
     headline_report = results
 
 
+
+
 # -----------------------------------------------------------------------------
 # Styling
 # -----------------------------------------------------------------------------
@@ -367,6 +369,8 @@ if page == "Executive Dashboard":
         c.metric("Hard examples loaded", integer(meta.get("hard_examples_loaded_total")))
     else:
         st.info("Round-comparison report not found.")
+
+
 
 
 # -----------------------------------------------------------------------------
