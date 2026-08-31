@@ -1,1022 +1,1158 @@
-# AI Defense Lab — Red Team / Blue Team Payment Security
+# Blue Team Integration Specification
+## AI Defense Lab — Red Team / Blue Team Payment Security
 
-An end-to-end adversarial AI system for payment-security research that **identifies emerging fraud patterns, generates realistic synthetic attacks, detects them using a multi-stage defense pipeline, and feeds detection failures back into adaptive evaluation**.
-
-This project was developed for the **Mastercard Innovation Challenge @ GFF 2026 — AI Defense Lab for Payment Security**.
-
----
-
-## Overview
-
-Generative AI is making sophisticated payment fraud faster, cheaper, and harder to detect.
-
-Traditional static rules struggle with attacks that continuously change their behavior. This project addresses this problem through a closed-loop:
-
-**Red Team → Blue Team → Adaptive Defense**
-
-The system:
-
-1. **Identifies** emerging and plausible GenAI-enabled payment-fraud attack patterns.
-2. **Generates** controlled synthetic attack traces at scale.
-3. **Defends** against those attacks using multiple complementary ML detectors.
-4. **Fuses** detector outputs into a unified risk score.
-5. **Applies** a decision policy to determine the appropriate response.
-6. **Explains** individual and global model decisions.
-7. **Collects detection misses** as hard examples for future evaluation.
-8. **Feeds failures back** into the evaluation loop.
-
-The entire environment operates on **synthetic data** and does not interact with real payment systems or generate real payment requests.
+**Document purpose:** Technical handoff and integration contract for the Blue Team.
 
 ---
 
-# System Architecture
+## 1. Purpose and Scope
+
+This document defines how the Blue Team should consume the Red Team's synthetic payment-fraud attack corpora.
+
+The Red Team provides realistic, stateful, synthetic attack traces for two attack families:
+
+- `ACCOUNT_TAKEOVER` (ATO)
+- `AUTHORIZED_PUSH_PAYMENT` (APP)
+
+The Blue Team must use the observable telemetry as model input and use ground truth only for labeling, stratification, validation, and evaluation.
+
+**Core rule:**
+
+> `observable_trace` is model input. `ground_truth` is evaluation metadata and must never be used as a predictive feature.
+
+The environment is entirely synthetic and does not interact with real payment systems, banking infrastructure, or real customer accounts.
+
+---
+
+## 2. Red Team → Blue Team Integration Contract
+
+Each persisted corpus record has two major components:
 
 ```text
-                         ┌──────────────────────────────┐
-                         │          RED TEAM            │
-                         │                              │
-                         │  Identify Emerging Attacks  │
-                         │              ↓               │
-                         │  Generate Attack Scenarios  │
-                         │              ↓               │
-                         │  Synthetic Event Simulation │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │       BLUE TEAM DEFENSE      │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 1 — Rule Filter        │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 2 — XGBoost             │
-                         │ Behavioral ML Detection       │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 3 — Graph Detector     │
-                         │ GCN / Relationship Signals   │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 4 — Autoencoder        │
-                         │ Anomaly Detection            │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 5 — Risk Fusion        │
-                         │ Combine Detector Signals     │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 6 — Decision Policy    │
-                         │ Risk → Action                │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │ Stage 7 — Explainability     │
-                         │ SHAP + Case Reports          │
-                         └──────────────┬───────────────┘
-                                        │
-                                        ▼
-                         ┌──────────────────────────────┐
-                         │      ADAPTIVE FEEDBACK       │
-                         │                              │
-                         │  Miss Collection             │
-                         │          ↓                   │
-                         │  Hard Example Generation     │
-                         │          ↓                   │
-                         │  Re-evaluation              │
-                         │          ↓                   │
-                         │  Defense Improvement        │
-                         └──────────────────────────────┘
-1. Identify — Emerging Fraud Attacks
+AttackRecord
+├── observable_trace
+└── ground_truth
+```
 
-The Red Team models emerging payment-fraud behavior using structured attack scenarios.
+### 2.1 Observable Trace
 
-The simulator represents observable payment-system behavior including:
+This represents what a real payment-security system would observe.
 
-Session login
-Device registration
-Authentication failures
-Beneficiary additions
-Transactions
-Transaction failures
-Successful transactions
-Channel changes
-Behavioral timing
-Account-access behavior
-Account-modification behavior
-Exploitation and persistence signals
+It contains events such as:
 
-The system separates:
+- session login
+- device registration
+- authentication activity
+- beneficiary activity
+- transactions
+- transaction failures
+- successful transactions
+- channel changes
+- behavioral timing
+- account-access behavior
+- account-modification behavior
 
-Observable Evidence
+Use this component for:
 
-Information that a real fraud detector would actually be able to observe.
+- feature engineering
+- model training
+- model inference
+- behavioral analysis
+- sequence modeling
+- graph construction
 
-Ground Truth
+### 2.2 Ground Truth
 
-The simulated attack objective and scenario metadata.
+This represents hidden information about the simulated attack.
 
-This separation prevents hidden attack information from leaking into the detection model.
+It is used for:
 
-2. Generate — Synthetic Attack Simulation
+- labels
+- stratification
+- evaluation
+- error analysis
+- attack-family comparison
+- difficulty-specific evaluation
 
-The Red Team generation pipeline is:
+Do **not** pass ground-truth fields into feature extraction or inference.
 
-Reference Data
-      ↓
-Statistical Calibration
-      ↓
-Normal Behavioral World
-      ↓
-Attack Signature Library
-      ↓
-Scenario Composition
-      ↓
-Simulation Engine
-      ↓
-Synthetic Attack Traces
-      ↓
-Realism / Novelty Validation
+---
 
-The simulator generates synthetic:
+# 3. Delivered Red Team Corpus
 
-Entities
-Events
-Relationships
-Sessions
-Devices
-Beneficiaries
-Transactions
-Attack scenarios
+The finalized persisted corpora are:
 
-The generated traces are designed to resemble realistic behavioral patterns while remaining entirely synthetic.
+```text
+reports/ato_corpus_raw.json
+reports/app_corpus_raw.json
+```
 
-The simulator does not interact with real payment infrastructure.
+### Actual delivered counts
 
-3. Statistical Calibration
+| Corpus | Attack family | Persisted traces |
+|---|---|---:|
+| ATO | `ACCOUNT_TAKEOVER` | 97 |
+| APP | `AUTHORIZED_PUSH_PAYMENT` | 156 |
+| **Total** | | **253** |
 
-The synthetic environment is calibrated using public reference datasets.
+These are the actual persisted counts. They are not the original requested target counts.
 
-PaySim
+### Difficulty distribution
 
-PaySim is used for numerical transaction distributions and transaction-category mapping.
+#### ATO
 
-It provides a reference distribution for synthetic payment behavior.
+```text
+easy       22
+medium     25
+hard       25
+advanced   25
+TOTAL      97
+```
 
-IEEE-CIS Fraud Detection
+#### APP
 
-IEEE-CIS Fraud Detection is used primarily for categorical and device-related distributions.
+```text
+easy        6
+medium     50
+hard       50
+advanced   50
+TOTAL     156
+```
 
-Because the public datasets do not contain every type of telemetry required for long-term payment-security modeling, some aspects of the environment are explicitly domain-modeled.
+The lower EASY counts are a known consequence of the generator's structural diversity/entropy constraints and attempt budgets. Do not interpret the lower count as missing corruption or as a failed schema.
 
-4. Provenance Model
+---
 
-Features are classified into three provenance tiers.
+# 4. Corpus Record Loading
 
-Tier 1 — Learned
+Python:
 
-Empirically learned directly from reference data.
+```python
+import json
 
-Examples include:
+with open("reports/ato_corpus_raw.json", "r") as f:
+    ato = json.load(f)
 
-Transaction amount distributions
-Numerical transaction behavior
-Observed categorical distributions
-Tier 2 — Derived
+with open("reports/app_corpus_raw.json", "r") as f:
+    app = json.load(f)
 
-Computed from reference features using explicit derivation rules.
+records = ato + app
 
-Examples include:
+print("Total records:", len(records))
+```
 
-Typical transaction amount
-Aggregated behavioral statistics
-Derived temporal features
-Tier 3 — Domain Modeled
+Each record can then be separated:
 
-Synthetic assumptions used where suitable public telemetry is unavailable.
+```python
+for record in records:
+    observable = record["observable_trace"]
+    ground_truth = record["ground_truth"]
+```
 
-Examples include:
+---
 
-Long-term beneficiary relationships
-Extended behavioral state
-Certain relationship-level signals
+# 5. Observable Data Rules
 
-This provenance system prevents domain assumptions from being incorrectly presented as directly observed real-world measurements.
+The observable trace should be treated as the authoritative input boundary for Blue Team modeling.
 
-5. Defend — Multi-Stage Detection
+Typical observable information includes:
 
-The Blue Team uses several complementary detection mechanisms.
+```text
+event_id
+timestamp
+event_type
+customer_id
+session_id
+device_id
+beneficiary information where present
+transaction identifiers
+transaction amount
+transaction status
+channel information where present
+```
 
-The purpose is to combine:
+The exact schema in the persisted JSON should be treated as authoritative. Do not infer fields that are not actually present.
 
-Deterministic signals
-Supervised machine learning
-Graph relationships
-Unsupervised anomaly detection
-Risk fusion
-Decision policy
-Explainability
-Stage 1 — Rule Filter
+### Important
 
-The first layer applies deterministic behavioral rules.
+Account balances such as:
 
-Its purpose is to provide a fast first-line defense for high-confidence patterns before more computationally expensive models are applied.
+```text
+pre_balance
+post_balance
+```
 
-Conceptually:
+are intentionally not exposed in the flattened observable transaction representation.
 
-Payment/Event
+The simulator nevertheless maintains balance consistency internally during generation.
+
+Therefore:
+
+- Blue Team **must not depend on `pre_balance` or `post_balance`**
+- balance-derived model features must instead be reconstructed from observable history where possible
+- generation-time ledger correctness is an internal Red Team invariant
+
+---
+
+# 6. Ground Truth Fields
+
+Ground truth can contain information such as:
+
+```text
+attack_id
+attack_family
+attack_difficulty
+hidden_objective
+phase records
+planner metadata
+linked event IDs
+```
+
+Depending on the exact schema/version, additional ground-truth metadata may exist.
+
+### Ground-truth usage policy
+
+Allowed:
+
+```text
+Ground truth
      ↓
-Rule Evaluation
+Labels
      ↓
-Known High-Confidence Pattern?
+Evaluation
+```
+
+Not allowed:
+
+```text
+Ground truth
      ↓
-Yes → Flag
-No  → Continue to ML Detection
-6. Stage 2 — XGBoost Behavioral Detection
+Feature engineering
+     ↓
+Model
+```
 
-The primary tabular behavioral detector uses XGBoost over engineered event-sequence features.
+For example, this is forbidden:
 
-The model captures behavioral patterns across synthetic payment activity.
+```python
+features["attack_family"] = ground_truth["attack_family"]
+```
+
+This would constitute label leakage.
+
+---
+
+# 7. Attack Family: ATO
+
+## `ACCOUNT_TAKEOVER`
+
+ATO represents unauthorized access to a customer's account by another party.
+
+Typical behavioral characteristics include:
+
+- new-device registration
+- session/login activity
+- transaction activity following account access
+- transaction fragmentation
+- failed transaction attempts followed by lower successful amounts
+- timing variation
+- increasingly sophisticated low-and-slow behavior at higher difficulty
+
+### Observable indicators
+
+Potential features include:
+
+- new-device indicators
+- login frequency
+- device changes
+- transaction frequency
+- transaction fragmentation
+- failed-to-successful transaction transitions
+- amount progression
+- transaction timing
+- transactions per session
+- transactions per time window
+
+These are behavioral indicators, not ground-truth labels.
+
+---
+
+# 8. Attack Family: APP
+
+## `AUTHORIZED_PUSH_PAYMENT`
+
+APP represents a legitimate customer being socially engineered into authorizing payments.
+
+Typical behavioral characteristics include:
+
+- use of an existing/trusted device
+- existing session activity
+- delayed payment execution
+- hesitation gaps
+- beneficiary/payment behavior
+- failed attempts caused by transaction limits
+- lower subsequent successful amounts
+- difficulty-dependent behavioral variation
+
+### Observable indicators
+
+Potential features include:
+
+- trusted-device usage
+- session continuity
+- beneficiary-before-transaction sequence
+- time between relevant events
+- failed transaction retries
+- amount reduction after failures
+- transaction timing
+- session-to-payment relationships
+
+---
+
+# 9. Difficulty Semantics
+
+The generator uses four difficulty levels:
+
+```text
+easy
+medium
+hard
+advanced
+```
+
+Difficulty describes how difficult the simulated attack is intended to be for detection.
+
+It is **not** an observable feature.
+
+### ATO
+
+Higher difficulty generally introduces more subtle behavioral variation, including low-and-slow activity and more complex timing/transaction patterns.
+
+### APP
+
+Higher difficulty can introduce longer hesitation periods, friction, and multiple failed/retried payment attempts.
+
+### Important
+
+The Blue Team should evaluate performance separately by difficulty.
+
+Do not train a model using `attack_difficulty` as an input feature.
+
+---
+
+# 10. Recommended Feature Engineering
+
+Features should be constructed from observable telemetry.
+
+## Transaction features
+
+Examples:
+
+```text
+transaction count
+total transaction amount
+mean transaction amount
+median transaction amount
+maximum transaction amount
+amount variance
+failed transaction count
+successful transaction count
+failure-to-success ratio
+```
+
+## Temporal features
+
+```text
+transactions per hour
+events per hour
+time between login and transaction
+time between beneficiary activity and transaction
+time between failed and successful attempts
+session duration
+inter-event intervals
+```
+
+## Session features
+
+```text
+transactions per session
+login count
+authentication failures
+session reuse
+new session frequency
+```
+
+## Device features
+
+```text
+new-device indicator
+device count per customer
+device changes
+device-to-customer relationships
+```
+
+## Beneficiary features
+
+```text
+beneficiary additions
+beneficiary-before-payment sequence
+beneficiary reuse
+customer-beneficiary frequency
+time from beneficiary addition to payment
+```
+
+## Sequence features
+
+```text
+event-type sequences
+transition frequencies
+failed → successful transitions
+login → transaction transitions
+device → session → transaction transitions
+```
+
+## Graph features
+
+Potential graph entities:
+
+```text
+Customer
+ ├── Device
+ ├── Session
+ ├── Beneficiary
+ └── Transaction
+```
+
+Potential relationship features include:
+
+- degree
+- shared devices
+- shared beneficiaries
+- transaction relationships
+- session relationships
+- temporal relationships
+
+---
+
+# 11. Features That Must NOT Be Used
+
+Never use these as predictive model inputs:
+
+```text
+attack_family
+attack_difficulty
+hidden_objective
+planner_metadata
+internal phase labels
+ground-truth attack objective
+ground-truth-only metadata
+internal simulator state
+pre_balance
+post_balance
+```
+
+### Attack IDs
+
+`attack_id` is an identifier, not a behavioral feature.
+
+Do not allow the model to learn from ID formatting, prefixes, ordering, or generated values.
+
+---
+
+# 12. Train/Test Split Rules
+
+Split at the **attack-record/trace level**.
+
+Do not split individual events from the same attack trace across training and test sets.
+
+Bad:
+
+```text
+Trace A events 1-5 → training
+Trace A events 6-10 → test
+```
+
+Good:
+
+```text
+Trace A → training
+Trace B → training
+Trace C → test
+Trace D → test
+```
+
+Where graph/entity leakage is relevant, additionally consider grouping by customer/entity relationships.
+
+Keep ground truth completely separate from the feature pipeline.
+
+---
+
+# 13. Recommended Blue Team Pipeline
+
+```text
+                 Red Team Corpus
+                       │
+                       ▼
+                Schema Validation
+                       │
+                       ▼
+              Observable Extraction
+                       │
+                       ▼
+                Event Normalization
+                       │
+                       ▼
+                Feature Engineering
+                       │
+          ┌────────────┼─────────────┐
+          ▼            ▼             ▼
+       XGBoost       Graph        Autoencoder
+          │          Detector          │
+          └────────────┼───────────────┘
+                       ▼
+                  Risk Fusion
+                       │
+                       ▼
+                Decision Policy
+                       │
+                       ▼
+             Allow / Verify / Review /
+                    Block
+                       │
+                       ▼
+                Explainability
+                       │
+                       ▼
+                Miss Collection
+                       │
+                       ▼
+               Hard Examples
+                       │
+                       ▼
+                Re-evaluation
+```
+
+---
+
+# 14. Existing Blue Team Components
+
+The project architecture contains:
+
+### Stage 1 — Rule Filter
+
+Fast deterministic behavioral checks.
+
+### Stage 2 — XGBoost
+
+Tabular behavioral detection using engineered event-sequence features.
 
 Representative features include:
 
-Transaction counts
-Session-login counts
-Device-registration counts
-Beneficiary additions
-Total events
-Transactions per hour
-Transactions per session
-Authentication failures
-New-device indicators
-Beneficiary-before-transaction behavior
-Failed transactions
-Amount statistics
-Amount trends
-Channel diversity
-Event timing
+- transaction counts
+- session-login counts
+- device registrations
+- beneficiary additions
+- total events
+- transactions per hour
+- transactions per session
+- authentication failures
+- new-device indicators
+- failed transactions
+- amount statistics
+- amount trends
+- channel diversity
+- event timing
 
-The model is calibrated before downstream policy decisions.
+Verified model artifact:
 
-The verified trained model is preserved under:
-
+```text
 blue_team_output_FROZEN/xgb_model.joblib
-7. Stage 3 — Graph Detector
+```
 
-Payment-security behavior is not purely tabular.
+### Stage 3 — Graph Detector
 
-Relationships between entities can contain important signals.
+Models relationships among:
 
-The graph detector models relationships between entities and events using graph-based representations.
-
-Conceptually:
-
+```text
 Customer
-   │
-   ├── Device
-   │
-   ├── Session
-   │
-   ├── Beneficiary
-   │
-   └── Transaction
+Device
+Session
+Beneficiary
+Transaction
+```
 
-The graph component provides structural information that may not be captured by a purely tabular classifier.
+Verified result:
 
-The corresponding verified results are stored in:
-
+```text
 blue_team_output_FROZEN/gnn_results.json
-8. Stage 4 — Autoencoder Anomaly Detection
+```
 
-The Autoencoder provides an independent anomaly-detection signal.
+### Stage 4 — Autoencoder
 
-Instead of relying only on labeled fraud examples, it learns patterns associated with normal behavior.
+Provides an independent anomaly signal through reconstruction error.
 
-Conceptually:
+Verified result:
 
-Normal Behavioral Data
-          ↓
-     Autoencoder
-          ↓
-Reconstruction Error
-          ↓
-  Anomaly Signal
-
-This complements the supervised XGBoost model.
-
-Verified results are preserved in:
-
+```text
 blue_team_output_FROZEN/stage4_autoencoder_results.json
-9. Stage 5 — Risk Fusion
+```
 
-The individual detector outputs are combined into a unified risk signal.
+### Stage 5 — Risk Fusion
 
-Rule Signal
-     +
-XGBoost Signal
-     +
-Graph Signal
-     +
-Autoencoder Signal
-     ↓
-Risk Fusion
-     ↓
-Unified Risk Score
+Combines:
 
-The purpose of risk fusion is to combine different types of evidence rather than depending on a single detector.
+```text
+Rule signal
+XGBoost signal
+Graph signal
+Autoencoder signal
+```
 
-Verified fusion outputs are preserved in:
+into a unified risk score.
 
+Artifact:
+
+```text
 blue_team_output_FROZEN/risk_fusion_results.json
-10. Stage 6 — Decision Policy
+```
 
-The unified risk score is converted into an operational decision.
+### Stage 6 — Decision Policy
 
-Conceptually:
+Maps risk to operational action:
 
-                 Risk Score
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-        ▼            ▼            ▼
-     LOW RISK    MEDIUM RISK   HIGH RISK
-        │            │            │
-        ▼            ▼            ▼
-      Allow      Verification   Block /
-                  / Review      Escalate
-
-The decision policy is intentionally separated from the underlying ML models.
-
-This allows policy thresholds to be evaluated independently.
-
-Policy results are stored in:
-
-frozen_reports/decision_policy_results.json
-
-Sensitivity analysis is stored in:
-
-frozen_reports/decision_policy_sensitivity_results.json
-11. Stage 7 — Explainability
-
-The system provides both global and case-level explanations.
-
-Global Explainability
-
-SHAP analysis is used to identify features contributing to model behavior.
+```text
+LOW       → Allow
+MEDIUM    → Verification / Review
+HIGH      → Block / Escalate
+```
 
 Artifacts:
 
-blue_team_output_FROZEN/explainability/
-├── global_feature_importance.json
-└── global_shap_summary.png
-Case-Level Explainability
+```text
+frozen_reports/decision_policy_results.json
+frozen_reports/decision_policy_sensitivity_results.json
+```
 
-Individual cases have structured explanation reports:
+### Stage 7 — Explainability
 
-blue_team_output_FROZEN/explainability/
-├── case_reports.json
-└── case_reports.md
+Global:
 
-This allows the system to provide more than a simple:
+```text
+blue_team_output_FROZEN/explainability/global_feature_importance.json
+blue_team_output_FROZEN/explainability/global_shap_summary.png
+```
 
-Fraud = True
+Case-level:
 
-Instead, the system can expose the behavioral evidence contributing to the decision.
+```text
+blue_team_output_FROZEN/explainability/case_reports.json
+blue_team_output_FROZEN/explainability/case_reports.md
+```
 
-12. Adaptive Feedback Loop
+---
 
-One of the central ideas of the project is that detection failures should become future stress-testing data.
+# 15. Normal / Legitimate Data
 
-              Detection
-                  ↓
-            Miss Collection
-                  ↓
-            Failure Analysis
-                  ↓
-        Hard Example Generation
-                  ↓
-           Re-evaluation
-                  ↓
-        Defense Improvement
-                  ↓
-               Repeat
+The Red Team corpus is an attack corpus.
 
-This creates a closed-loop adversarial defense system.
+It should not automatically be treated as the complete legitimate-vs-fraud training dataset.
 
-The Red Team generates attacks.
+The intended combination is:
 
-The Blue Team detects them.
+```text
+Normal World / legitimate activity
+            +
+        ATO attacks
+            +
+        APP attacks
+            ↓
+     Blue Team dataset
+```
 
-The Blue Team's misses become information for future Red Team stress tests.
+The Red Team attacks provide controlled positive/adversarial cases.
 
-This creates an iterative:
+---
 
-Attack → Detect → Analyze → Stress-Test → Improve
+# 16. Evaluation Protocol
 
-cycle.
+At minimum evaluate:
 
-13. Hard Example Generation
+```text
+Precision
+Recall
+F1
+ROC-AUC
+PR-AUC
+Confusion Matrix
+```
 
-Hard examples are generated from cases where the defense has difficulty distinguishing attack behavior.
+Evaluate separately for:
 
-The generated hard examples are stored in:
+```text
+All attacks
+ATO
+APP
+ATO by difficulty
+APP by difficulty
+```
 
-blue_team_output_FROZEN/hard_examples.jsonl
+Also examine:
 
-The generation report is stored in:
+```text
+false positives
+false negatives
+missed ATO
+missed APP
+performance by difficulty
+```
 
-blue_team_output_FROZEN/hard_example_generation_report.json
+Do not rely only on aggregate accuracy.
 
-These examples are intended for controlled evaluation and stress testing rather than real-world attack execution.
+---
 
-14. Verified Evaluation
+# 17. Data Quality Verification
 
-The repository contains the verified outputs from the end-to-end evaluation.
+The final persisted corpora were verified with the following results:
 
-The observed Round-1 and Round-2 ATO recall values were:
+| Check | Result |
+|---|---:|
+| ATO records | 97 |
+| APP records | 156 |
+| Malformed ATO records | 0 |
+| Malformed APP records | 0 |
+| ATO duplicate attack IDs | 0 |
+| APP duplicate attack IDs | 0 |
+| Cross-family attack-ID intersection | 0 |
+| Ground-truth/observable pairing mismatches | 0 |
+| Observable leakage | 0 |
+| Observable events scanned | 1,783 |
+| Chronology failures | 0 |
+| ATO schema failures | 0 |
+| APP schema failures | 0 |
 
-Evaluation	ATO Recall
-Round 1	98.97%
-Round 2	96.08%
+The full Red Team test suite at the final verification point:
 
-The evaluation also included controlled analysis of the difference between the two rounds.
+```text
+468 passed
+0 failed
+0 warnings
+```
 
-The investigation found:
+with the command:
 
-Round 1 contained 97 ATO cases.
-Round 2 contained 102 ATO cases.
-None of the original 97 ATO cases flipped from correct to incorrect.
-Three of the additional Round-2 misses were newly introduced hard examples.
-Adding examples changed the StratifiedKFold partitioning.
-A controlled same-fold evaluation produced 0/97 original ATO misses.
+```powershell
+$env:PYTHONPATH="src"
+pytest tests/ -v -W error::DeprecationWarning
+```
 
-Therefore, the Round-2 recall difference should be interpreted in the context of changed sample composition and cross-validation fold assignment rather than being treated automatically as model degradation.
+---
 
-Detailed evidence is available in:
+# 18. Ground-Truth / Observable Isolation
 
-reports/FINAL_VALIDATION_REPORT.md
-15. Hard-Example Diversity Investigation
+The critical security property is separation between:
 
-The five generated ATO hard examples were investigated at the actual model-feature level.
+```text
+WHAT THE ATTACKER ACTUALLY DID
+              vs.
+WHAT THE BANK WOULD OBSERVE
+```
 
-Their provenance showed:
+Observable traces were scanned for ground-truth fields.
 
-5 hard examples
-       ↓
-2 source misses
+Final result:
 
-When passed through the real feature extractor:
+```text
+1,783 observable events scanned
+0 leakage findings
+```
 
-25 / 26 features
-        ↓
-    identical
+The observable corpus must remain the only input to the Blue Team feature pipeline.
 
-1 feature
-        ↓
-login → device-registration timing
+---
 
-Therefore, the five cases should not be described as five fully independent attack mechanisms.
+# 19. Corpus Pairing
 
-They represent variations of a narrow minimal-trace ATO template.
+Every persisted record contains its observable trace and corresponding ground truth.
 
-This limitation is explicitly documented rather than hidden.
+The verification found:
 
-Detailed investigation:
+```text
+Pairing mismatches: 0
+```
 
-reports/problem4_ato_hard_example_diversity_investigation.md
+Ground-truth `linked_event_ids` were checked against the event IDs in the corresponding observable trace.
 
-A future improvement is to generate hard examples from a broader set of independent source misses and attack mechanisms.
+Therefore the ground truth can be used after inference to determine whether detected events correspond to the actual simulated attack events.
 
-16. Validation
+---
 
-The current repository passes the complete test suite:
+# 20. Chronology
 
-468 passed, 1 warning
+All observable event arrays were verified to be ordered chronologically.
 
-Command:
+Result:
 
-python -m pytest -q
+```text
+253 traces checked
+0 chronology failures
+```
 
-The remaining warning concerns shuffling an Arrow StringArray in:
+Blue Team should preserve timestamps as temporal information rather than arbitrarily shuffling events inside an individual trace.
 
-tests/test_sequence_dataset.py
+---
 
-and:
+# 21. Novelty and Diversity
 
-src/red_team/ml/sequence_dataset.py
+The Red Team novelty engine tracks fingerprints by:
 
-It does not currently cause a test failure.
+```text
+attack family
++
+difficulty bucket
+```
 
-17. Frozen Verified Artifacts
+Final corpus audit:
 
-The verified Blue Team baseline is preserved under:
+```text
+ATO duplicate fingerprints: 6
+APP duplicate fingerprints: 3
+```
 
-blue_team_output_FROZEN/
+These duplicates occurred across different difficulty buckets.
 
-Important artifacts include:
+There were zero duplicate fingerprints within the same difficulty bucket.
 
-blue_team_output_FROZEN/
-├── calibrator.joblib
-├── xgb_model.joblib
-├── gnn_results.json
-├── hard_example_generation_report.json
-├── hard_examples.jsonl
-├── misses.jsonl
-├── results.json
-├── risk_fusion_results.json
-├── round1_vs_round2_report.json
-├── stage4_autoencoder_results.json
-├── three_stage_cascade_results.json
-└── explainability/
-    ├── case_reports.json
-    ├── case_reports.md
-    ├── global_feature_importance.json
-    └── global_shap_summary.png
+This means the duplicates do not indicate a failure of the within-bucket novelty gate.
 
-Additional adaptive-evaluation artifacts:
+Do not use the fingerprint as a model feature.
 
-frozen_reports/
-├── adaptive_eval_holdout.json
-├── adaptive_round2_report.json
-├── decision_policy_results.json
-├── decision_policy_sensitivity_results.json
-└── misses.jsonl
+---
 
-The verified baseline is tagged:
+# 22. PRNG and Reproducibility
 
-v1.0-frozen-verified
+A cross-family PRNG collision was identified and fixed.
 
-The purpose of the frozen directory is to preserve a reproducible verified baseline.
+The issue was caused by the simulator deriving its random stream from the raw seed without incorporating attack family.
 
-It does not mean that the system cannot be demonstrated through the web prototype.
+The implemented solution salts the seed using the attack family before constructing the internal `random.Random` stream.
 
-18. Working Web Prototype
+Conceptually:
 
-The project contains a browser-based prototype for demonstrating the system.
+```text
+raw seed
+   +
+attack family
+   ↓
+stable salted seed
+   ↓
+random.Random(...)
+```
 
-There are two components:
+This prevents two different attack families from receiving the same random stream when the same raw seed is reused.
 
-Streamlit UI
-     ↓
-FastAPI Backend
-     ↓
-Verified Pipeline Outputs
-Streamlit Application
+A dedicated regression test verifies the original collision condition.
 
-The Streamlit application is located at:
+---
 
-streamlit_app/app.py
+# 23. Important ATO Acceptance-Rate Clarification
 
-Run locally:
+An earlier ATO acceptance figure of:
 
-streamlit run streamlit_app/app.py
+```text
+100 / 131 = 76.33%
+```
 
-The application provides the judge-facing demonstration interface.
+must **not** be used as the modern ATO benchmark.
 
-FastAPI Backend
+That number came from an earlier Stage 15 measurement before the defensive novelty filtering used in the later pipeline.
 
-The backend is located at:
+The apples-to-apples Stage 23 baseline was:
 
-web_prototype/api/
+```text
+99 / 676 = 14.64%
+```
 
-Run locally:
+The isolated regression tests after the PRNG fix produced:
 
-$env:PYTHONPATH="$PWD\src"
-python -m uvicorn web_prototype.api.app:app --reload --port 8000
+```text
+Pre-fix:  98 / 643 = 15.24%
+Post-fix: 97 / 627 = 15.47%
+```
 
-Backend:
+These are consistent with the modern approximately 15% ATO acceptance regime.
 
-http://127.0.0.1:8000
+Therefore the PRNG fix was not shown to degrade ATO generation quality.
 
-API documentation:
+---
 
-http://127.0.0.1:8000/docs
+# 24. Known Limitations
 
-Health check:
+### Synthetic data
 
-http://127.0.0.1:8000/api/health
+Generated traces are synthetic and their realism is bounded by the reference data and domain modeling.
 
-Dashboard data:
+### Public-data coverage
 
-http://127.0.0.1:8000/api/reports/dashboard
+Public datasets do not contain every type of payment-security telemetry required for long-term behavioral modeling.
 
-The API reads the project's actual reports and model outputs rather than presenting fabricated evaluation values.
+### Domain-modeled behavior
 
-19. Running the Complete Prototype Locally
+Some long-term behavioral relationships are explicitly modeled rather than directly learned from public data.
 
-Open Terminal 1:
+Examples include:
 
-cd "C:\Users\New\Downloads\AI_Defence_Sys-master (1)\AI_Defence_Sys-master"
+- long-term beneficiary relationships
+- extended behavioral state
+- certain relationship-level signals
 
-$env:PYTHONPATH="$PWD\src"
+### APP EASY diversity
 
-python -m uvicorn web_prototype.api.app:app --reload --port 8000
+The EASY APP bucket has limited structural diversity. The generator does not manufacture artificial diversity merely to increase record counts.
 
-Then open Terminal 2:
+### ATO EASY budget
 
-cd "C:\Users\New\Downloads\AI_Defence_Sys-master (1)\AI_Defence_Sys-master"
+The ATO EASY bucket can hit its attempt budget because of structural novelty/entropy limits.
 
-streamlit run streamlit_app/app.py
+### Hard-example diversity
 
-The Streamlit interface will normally open at:
+The current hard-example investigations found that some generated hard examples can be highly similar in model-feature space.
 
-http://localhost:8501
+### Evaluation stability
 
-The backend will run at:
+Round-to-round ML metrics can change due to:
 
-http://127.0.0.1:8000
-20. Repository Structure
-AI_Defence_Sys/
-│
-├── src/
-│   └── red_team/
-│       ├── ...
-│       └── ...
-│
-├── tests/
-│
-├── scripts/
-│
-├── reports/
-│   ├── FINAL_VALIDATION_REPORT.md
-│   └── problem4_ato_hard_example_diversity_investigation.md
-│
-├── blue_team_output/
-│
-├── blue_team_output_FROZEN/
-│   ├── xgb_model.joblib
-│   ├── calibrator.joblib
-│   ├── risk_fusion_results.json
-│   ├── results.json
-│   └── explainability/
-│
-├── frozen_reports/
-│
-├── web_prototype/
-│   └── api/
-│       ├── app.py
-│       ├── config.py
-│       ├── pipeline_runner.py
-│       ├── reports.py
-│       └── README.md
-│
-├── streamlit_app/
-│   └── app.py
-│
-├── data/
-│   └── reference/
-│
-├── models/
-│
-├── requirements.txt
-├── .gitignore
-├── README.md
-├── DATASET_LICENSE.md
-├── BLUE_TEAM_INTEGRATION_SPEC.md
-├── RED_TEAM_HANDOFF.md
-└── STAGE_STATUS.md
-21. Installation
+- sample-count changes
+- cross-validation partitioning
+- fold reassignment
+- newly introduced hard examples
 
-Clone the repository:
+Future comparisons should use fixed evaluation sets and controlled folds.
 
-git clone https://github.com/Pranavi0525/AI_Defence_Sys.git
-cd AI_Defence_Sys
+---
 
-Install dependencies:
-
-pip install -r requirements.txt
-
-Install the project with development dependencies:
-
-pip install -e ".[dev]"
-
-Set the Python source path:
-
-Windows PowerShell
-$env:PYTHONPATH="$PWD\src"
-Linux / macOS
-export PYTHONPATH="$PWD/src"
-22. Run Tests
-
-Run the complete test suite:
-
-python -m pytest -q
-
-Expected verified baseline:
-
-468 passed, 1 warning
-
-For verbose output:
-
-pytest tests/ -v
-23. Streamlit Deployment
-
-The web prototype is designed to be deployable as a Streamlit application.
-
-The recommended deployment architecture is:
-
-GitHub Repository
-        ↓
-Streamlit Community Cloud
-        ↓
-Streamlit Application
-
-The Streamlit entry point is:
-
-streamlit_app/app.py
-
-The repository should contain the dependency specification required by the Streamlit deployment environment.
-
-For deployment, the Streamlit application should be configured to use repository-local artifacts and should not depend on:
-
-127.0.0.1
-localhost
-
-for judge-facing functionality.
-
-24. Real-World Feasibility
-
-The architecture is designed around components that can conceptually be deployed in a real-time payment-security environment.
-
-A production deployment could follow:
-
-Payment Event
-      ↓
-Low-Latency Rule Filter
-      ↓
-Behavioral Feature Extraction
-      ↓
-ML Detection
-      ↓
-Graph / Relationship Signals
-      ↓
-Anomaly Detection
-      ↓
-Risk Fusion
-      ↓
-Decision Policy
-      ↓
-Allow / Verify / Review / Block
-
-A production system would additionally require:
-
-Real-time payment-stream integration
-Low-latency model serving
-Feature-store integration
-Model monitoring
-Data-drift monitoring
-Adversarial monitoring
-Human-review workflows
-Security controls
-Privacy controls
-Governance
-Regulatory compliance
-Continuous validation
-Model versioning
-Audit logging
-
-The current implementation is a controlled research prototype rather than a production payment-processing system.
-
-25. Security and Safety Boundary
+# 25. Security Boundary
 
 This project is a controlled payment-security research simulation.
 
-The Red Team components generate synthetic scenarios only.
+It:
 
-The project:
+- does not access real banking systems
+- does not interact with payment networks
+- does not submit real payment requests
+- does not target real accounts
+- does not contain real customer payment information
+- uses synthetic entities and simulated events
 
-Does not access real banking systems.
-Does not interact with payment networks.
-Does not submit real payment requests.
-Does not target real accounts.
-Does not contain real customer payment information.
-Uses synthetic entities and simulated events for research.
+The Red Team is intended for controlled defensive evaluation.
 
-The objective is to improve fraud detection and resilience through controlled adversarial evaluation.
+---
 
-26. Known Limitations
-Synthetic Data
+# 26. Repository Map
 
-The realism of generated data is bounded by the public datasets used for calibration.
+Important Red Team locations:
 
-Tail Behavior
+```text
+src/red_team/
+├── attacks/
+├── schemas/
+├── validation/
+├── world/
+└── ml/
+```
 
-Public datasets may not fully represent rare real-world fraud behavior.
+Persisted attack corpora:
 
-Device Information
+```text
+reports/
+├── ato_corpus_raw.json
+└── app_corpus_raw.json
+```
 
-IEEE-CIS device information is hashed/obfuscated, limiting exact categorical recovery.
+Important handoff document:
 
-Long-Term Behavioral State
+```text
+RED_TEAM_HANDOFF.md
+```
 
-Long-term behavioral relationships are domain-modeled where suitable public telemetry is unavailable.
+Blue Team artifacts:
 
-Hard-Example Diversity
-
-The current five ATO hard examples are concentrated around two source misses and are highly similar in model feature space.
-
-They should therefore be interpreted as variations of a narrow hard-example template rather than five independent attack families.
-
-Evaluation Stability
-
-Round-to-round comparisons can be affected by:
-
-Sample-count changes
-Cross-validation partitioning
-Fold reassignment
-Newly introduced hard examples
-
-Future regression evaluation should use fixed evaluation sets and controlled fold assignments.
-
-Production Deployment
-
-The current project is a research prototype.
-
-Production deployment would require additional:
-
-Infrastructure
-Security
-Governance
-Privacy
-Compliance
-Monitoring
-Operational controls
-27. Competition Alignment
-
-The project directly maps to the three core pillars of the competition.
-
-Competition Requirement	Project Component
-Identify	Research-grounded attack signatures and structured scenarios
-Generate	Synthetic attack generation and event simulation
-Defend	Multi-stage ML defense pipeline
-Detection efficacy	XGBoost + Graph Detector + Autoencoder + Risk Fusion
-Mitigation	Decision Policy
-Explainability	SHAP + Case-Level Reports
-Adaptive Defense	Miss Collection + Hard Examples + Re-evaluation
-Real-world feasibility	Layered detection and decision architecture
-Working Prototype	Streamlit + FastAPI
-Reproducibility	Automated tests + Frozen Verified Artifacts
-28. Competition Requirement: Code Repository
-
-The competition requires a complete, runnable GitHub repository covering:
-
-Identify
-Generate
-Defend
-
-This repository contains:
-
-src/
-tests/
-scripts/
-blue_team_output/
+```text
 blue_team_output_FROZEN/
 frozen_reports/
-reports/
+```
+
+Web prototype:
+
+```text
 web_prototype/
 streamlit_app/
+```
 
-The repository also contains reproducibility and validation artifacts.
+Tests:
 
-29. Competition Requirement: Solution Walkthrough
+```text
+tests/
+```
 
-The solution walkthrough should explain:
+---
 
-The emerging fraud attacks identified.
-How synthetic attacks are generated.
-How the simulation is calibrated.
-How attack fidelity is evaluated.
-How the Blue Team detects attacks.
-How detector outputs are fused.
-How decisions are made.
-How decisions are explained.
-How misses become hard examples.
-How the system supports real-world payment-security deployment.
+# 27. Integration Checklist
 
-The walkthrough should be submitted as the required .docx artifact in the competition's Writeups section.
+Before declaring integration complete:
 
-30. Competition Requirement: Working Web Prototype
+```text
+[ ] Clone repository
+[ ] Install requirements
+[ ] Configure PYTHONPATH
+[ ] Load ATO corpus
+[ ] Load APP corpus
+[ ] Validate every record against schema
+[ ] Separate observable_trace from ground_truth
+[ ] Confirm ground_truth is excluded from features
+[ ] Inspect event timestamps
+[ ] Preserve event ordering
+[ ] Add Normal World / legitimate data
+[ ] Build trace-level train/test split
+[ ] Prevent entity leakage where applicable
+[ ] Build transaction features
+[ ] Build session features
+[ ] Build device features
+[ ] Build beneficiary features
+[ ] Build temporal features
+[ ] Build sequence features
+[ ] Build graph features if applicable
+[ ] Train/evaluate detector
+[ ] Evaluate ATO separately
+[ ] Evaluate APP separately
+[ ] Evaluate by difficulty
+[ ] Calculate precision/recall/F1
+[ ] Calculate PR-AUC/ROC-AUC where appropriate
+[ ] Analyze false positives
+[ ] Analyze false negatives
+[ ] Integrate risk fusion
+[ ] Integrate decision policy
+[ ] Integrate explainability
+[ ] Preserve ground-truth-only evaluation path
+```
 
-The project provides a web-based prototype using:
+---
 
-Streamlit
-    +
-FastAPI
+# 28. Troubleshooting
 
-The Streamlit application acts as the judge-facing interface.
+### "Why are there only 97 ATO traces?"
 
-The FastAPI service exposes the underlying pipeline/report information.
+97 is the actual persisted qualified corpus. The EASY bucket reached its attempt budget before the requested overall target of 100 was reached.
 
-The intended demonstration flow is:
+### "Why are there only 156 APP traces?"
 
-Attack Identification
-        ↓
-Attack Generation
-        ↓
-Defense Pipeline
-        ↓
-Risk Score
-        ↓
-Decision
-        ↓
-Explanation
-        ↓
-Miss / Hard Example
-        ↓
-Adaptive Evaluation
-31. Final Closed Loop
+156 is the actual persisted qualified corpus. The EASY bucket has structurally constrained diversity.
 
-The central concept of the project can be summarized as:
+### "Can I use `attack_family` as a feature?"
 
-                  ┌───────────────┐
-                  │    IDENTIFY   │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │    GENERATE   │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │     DETECT    │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │      FUSE     │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │     DECIDE    │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │    EXPLAIN    │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │ FIND MISSES   │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │ HARD EXAMPLES │
-                  └───────┬───────┘
-                          ↓
-                  ┌───────────────┐
-                  │ RE-EVALUATE   │
-                  └───────┬───────┘
-                          │
-                          └───────────────┐
-                                          ↓
-                                   STRENGTHEN DEFENSE
-                                          │
-                                          └──────→ REPEAT
+**No.** It is the target label.
 
-The key idea is:
+### "Can I use `attack_difficulty` as a feature?"
 
-The attacks generated by the Red Team become the stress-testing ground for the Blue Team. The failures discovered by the Blue Team become feedback for the next evaluation cycle.
+**No.** It is ground-truth metadata.
 
-This transforms the system from a static fraud classifier into a closed-loop adversarial payment-security research platform.
+### "Can I use attack IDs?"
 
-32. Project Status
-Red Team
+Use them only for record identity/joining. Never as predictive features.
 
-FROZEN & QUALIFIED
+### "Can I use balances?"
 
-See:
+Not from the observable attack records. `pre_balance` and `post_balance` are intentionally absent from the flattened observable schema.
 
+### "Can I use ground truth during evaluation?"
+
+Yes. That is its intended purpose.
+
+### "Can I use ground truth during training?"
+
+Only as the target/label or for stratification. Never as an input feature.
+
+---
+
+# 29. Final Red Team → Blue Team Contract
+
+The boundary is:
+
+```text
+                 RED TEAM
+                    │
+                    │
+                    ▼
+        ┌────────────────────────┐
+        │ Observable Attack Data │
+        └────────────┬───────────┘
+                     │
+                     ▼
+                 BLUE TEAM
+                     │
+             feature engineering
+                     │
+                     ▼
+                  models
+                     │
+                     ▼
+                  scores
+                     │
+                     ▼
+                 decisions
+```
+
+Ground truth remains on a separate evaluation path:
+
+```text
+Ground Truth
+     │
+     ├── labels
+     ├── stratification
+     ├── evaluation
+     └── error analysis
+```
+
+### Non-negotiable rule
+
+> **Blue Team must never use hidden Red Team ground-truth information as an observable behavioral feature.**
+
+The purpose of the Red Team corpus is to provide realistic adversarial behavioral telemetry while preserving a trustworthy distinction between the attacker's hidden intent and the evidence available to a fraud-detection system.
+
+---
+
+## 30. Handoff Summary
+
+### Delivered
+
+```text
+ATO corpus:              97 traces
+APP corpus:             156 traces
+Total attack traces:    253
+Observable events:    1,783
+```
+
+### Verified
+
+```text
+Malformed records:        0
+ID collisions:            0
+Cross-family ID overlap:  0
+GT/observable mismatches: 0
+Observable leakage:       0
+Chronology failures:      0
+Schema failures:          0
+Final test failures:      0
+```
+
+### Primary files
+
+```text
+reports/ato_corpus_raw.json
+reports/app_corpus_raw.json
 RED_TEAM_HANDOFF.md
-Blue Team
+BLUE_TEAM_INTEGRATION_SPEC.md
+```
 
-IMPLEMENTED, EVALUATED & VERIFIED
+### Status
 
-Verified artifacts are preserved under:
-
-blue_team_output_FROZEN/
-frozen_reports/
-Automated Tests
-468 passed
-1 warning
-0 failures
-Web Prototype
-Streamlit + FastAPI
-Verified Git Tag
-v1.0-frozen-verified
-License and Dataset Attribution
-
-Dataset usage and licensing information is documented in:
-
-DATASET_LICENSE.md
-
-The project distinguishes public reference data from derived and synthetic data through its provenance model.
+The Red Team corpus and integration boundary are frozen at the documented artifact state. Any regeneration or modification should produce a new versioned evaluation artifact rather than silently replacing the existing baseline.
