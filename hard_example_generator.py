@@ -74,18 +74,36 @@ from __future__ import annotations
 import copy
 import json
 import random
+import sys
 import uuid
 from collections import defaultdict
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
+REPO_ROOT = Path(__file__).resolve().parent
+
+# --- Make this script runnable directly (``python hard_example_generator.py``)
+# from the repository root without requiring the user to set PYTHONPATH.
+# The Red Team package lives under ``src/red_team`` and is only importable
+# once ``src`` is on sys.path -- pytest gets this for free from
+# ``pyproject.toml``'s ``[tool.pytest.ini_options] pythonpath = ["src"]``,
+# but a plain ``python hard_example_generator.py`` invocation does not.
+# We insert the path idempotently (guarding against duplicates) and only if
+# the package isn't already importable, so this never fights an explicit
+# PYTHONPATH the user has set (e.g. one that also includes backend_api) and
+# never creates a second, differently-pathed copy of the ``red_team`` module.
+_SRC_DIR = str(REPO_ROOT / "src")
+if _SRC_DIR not in sys.path:
+    try:
+        import red_team  # noqa: F401  (already importable -- nothing to do)
+    except ModuleNotFoundError:
+        sys.path.insert(0, _SRC_DIR)
+
 import numpy as np
 import joblib
 
 from blue_team_pipeline import CONFIG, FEATURE_COLS, extract_features, stage1_rule_filter
-
-REPO_ROOT = Path(__file__).parent
 MISSES_PATH = REPO_ROOT / "misses.jsonl"
 ATO_CORPUS_PATH = REPO_ROOT / "reports" / "ato_corpus_raw.json"
 APP_CORPUS_PATH = REPO_ROOT / "reports" / "app_corpus_raw.json"

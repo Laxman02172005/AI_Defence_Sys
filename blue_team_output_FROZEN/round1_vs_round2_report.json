@@ -45,22 +45,6 @@
       "n_round2": 1463
     },
     "by_family": {
-      "AUTHORIZED_PUSH_PAYMENT": {
-        "precision": {
-          "round1": 0.967948717948718,
-          "round2": 0.967948717948718
-        },
-        "recall": {
-          "round1": 0.967948717948718,
-          "round2": 0.967948717948718
-        },
-        "f1": {
-          "round1": 0.967948717948718,
-          "round2": 0.967948717948718
-        },
-        "n_round1": 1361,
-        "n_round2": 1361
-      },
       "ACCOUNT_TAKEOVER": {
         "precision": {
           "round1": 0.9504950495049505,
@@ -76,6 +60,22 @@
         },
         "n_round1": 1302,
         "n_round2": 1307
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "precision": {
+          "round1": 0.967948717948718,
+          "round2": 0.967948717948718
+        },
+        "recall": {
+          "round1": 0.967948717948718,
+          "round2": 0.967948717948718
+        },
+        "f1": {
+          "round1": 0.967948717948718,
+          "round2": 0.967948717948718
+        },
+        "n_round1": 1361,
+        "n_round2": 1361
       }
     }
   },
@@ -115,22 +115,6 @@
       "n_round2": 1463
     },
     "by_family": {
-      "AUTHORIZED_PUSH_PAYMENT": {
-        "precision": {
-          "round1": 0.96875,
-          "round2": 0.96875
-        },
-        "recall": {
-          "round1": 0.9935897435897436,
-          "round2": 0.9935897435897436
-        },
-        "f1": {
-          "round1": 0.9810126582278481,
-          "round2": 0.9810126582278481
-        },
-        "n_round1": 1361,
-        "n_round2": 1361
-      },
       "ACCOUNT_TAKEOVER": {
         "precision": {
           "round1": 0.9504950495049505,
@@ -146,6 +130,22 @@
         },
         "n_round1": 1302,
         "n_round2": 1307
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "precision": {
+          "round1": 0.96875,
+          "round2": 0.96875
+        },
+        "recall": {
+          "round1": 0.9935897435897436,
+          "round2": 0.9935897435897436
+        },
+        "f1": {
+          "round1": 0.9810126582278481,
+          "round2": 0.9810126582278481
+        },
+        "n_round1": 1361,
+        "n_round2": 1361
       }
     }
   },
