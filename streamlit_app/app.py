@@ -118,10 +118,6 @@ def compact_table(rows):
     return pd.DataFrame(rows)
 
 
-def show_raw(title, data):
-    with st.expander(title):
-        st.json(data)
-
 
 def stage_status(label, available, detail="Frozen evidence loaded"):
     return {
@@ -369,7 +365,6 @@ if page == "Executive Dashboard":
         a.metric("Round 1 examples", integer(meta.get("round1_n")))
         b.metric("Round 2 examples", integer(meta.get("round2_n")))
         c.metric("Hard examples loaded", integer(meta.get("hard_examples_loaded_total")))
-        show_raw("View round-comparison evidence", rounds)
     else:
         st.info("Round-comparison report not found.")
 
@@ -419,9 +414,6 @@ elif page == "Red Team":
     cols[1].markdown("**Generate**\n\nCompose controlled synthetic scenarios and observable event traces.")
     cols[2].markdown("**Validate**\n\nUse realism, novelty, and hard-example checks before defense evaluation.")
 
-    if hard_generation:
-        show_raw("Technical evidence: generation validation report", hard_generation)
-
 
 # -----------------------------------------------------------------------------
 # Blue Team
@@ -454,8 +446,6 @@ elif page == "Blue Team":
             metric_cards(results)
         else:
             st.warning("XGBoost/cascade evidence not found.")
-        if results:
-            show_raw("Technical evidence: XGBoost report", results)
 
     with tabs[1]:
         st.subheader("Stage 3 — GCN / Graph Signals")
@@ -471,10 +461,6 @@ elif page == "Blue Team":
             metric_cards(gnn)
         else:
             st.warning("GCN evidence not found.")
-        if gnn:
-            show_raw("Technical evidence: GCN report", gnn)
-        elif cascade:
-            show_raw("Technical evidence: cascade graph results", cascade)
 
     with tabs[2]:
         st.subheader("Stage 4 — Autoencoder")
@@ -483,7 +469,6 @@ elif page == "Blue Team":
             metric_cards(autoencoder)
             available_keys = [k for k in autoencoder.keys()] if isinstance(autoencoder, dict) else []
             st.write("Available evaluation fields:", ", ".join(available_keys[:12]) or "—")
-            show_raw("Technical evidence: autoencoder report", autoencoder)
         else:
             st.info("Autoencoder artifact/report is not present in the current frozen checkout.")
 
@@ -499,7 +484,6 @@ elif page == "Blue Team":
                         rows.append({"Signal": key, "Value": round(float(value), 4)})
                 if rows:
                     st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
-            show_raw("Technical evidence: risk-fusion report", fusion)
         else:
             st.info("Risk-fusion report not found.")
 
@@ -529,10 +513,6 @@ elif page == "Blue Team":
         else:
             st.warning("Decision-policy results not found.")
 
-        if decision:
-            show_raw("Technical evidence: decision-policy report", decision)
-        if sensitivity:
-            show_raw("Technical evidence: decision-policy sensitivity", sensitivity)
 
 
 # -----------------------------------------------------------------------------
@@ -567,7 +547,6 @@ elif page == "Adaptive Defense":
         a.metric("Round 1", integer(meta.get("round1_n")))
         b.metric("Round 2", integer(meta.get("round2_n")))
         c.metric("Hard examples loaded", integer(meta.get("hard_examples_loaded_total")))
-        show_raw("View round comparison", rounds)
 
     if misses:
         st.divider()
@@ -580,10 +559,6 @@ elif page == "Adaptive Defense":
             hide_index=True,
         )
 
-    if adaptive:
-        show_raw("Technical evidence: adaptive Round 2 report", adaptive)
-    if holdout:
-        show_raw("Technical evidence: adaptive holdout", holdout)
 
 
 # -----------------------------------------------------------------------------
@@ -628,7 +603,6 @@ elif page == "Explainability":
             )
         else:
             st.info("Case report is available but is not a list-shaped table.")
-            show_raw("Technical evidence: case reports", cases)
 
 
 # -----------------------------------------------------------------------------
@@ -641,6 +615,8 @@ elif page == "Evidence":
         "This is the technical appendix of the prototype. It shows which artifacts are "
         "present and where the dashboard gets its evidence."
     )
+
+    st.info("The main dashboard is intentionally judge-facing. Raw JSON is kept out of the primary views so the prototype reads like a product rather than a debugging console.")
 
     files = [
         FROZEN / "results.json",
