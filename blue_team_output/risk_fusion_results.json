@@ -1,0 +1,527 @@
+{
+  "real_corpus_risk_fusion": {
+    "comparison": {
+      "stage_1_2_only": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9801587301587301,
+          "recall": 0.9762845849802372,
+          "f1": 0.9782178217821782,
+          "roc_auc": 0.9855427812310367,
+          "pr_auc": 0.9826667502930168,
+          "confusion_matrix": [
+            [
+              1200,
+              5
+            ],
+            [
+              6,
+              247
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1302,
+            "precision": 0.9504950495049505,
+            "recall": 0.9896907216494846,
+            "f1": 0.9696969696969697,
+            "roc_auc": 0.9996064507849596,
+            "pr_auc": 0.9958177725622713
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1361,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9767980636237898,
+            "pr_auc": 0.9708040342938887
+          }
+        }
+      },
+      "stage_1_2_plus_gcn_max": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9801587301587301,
+          "recall": 0.9762845849802372,
+          "f1": 0.9782178217821782,
+          "roc_auc": 0.9855427812310367,
+          "pr_auc": 0.9826667502930168,
+          "confusion_matrix": [
+            [
+              1200,
+              5
+            ],
+            [
+              6,
+              247
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1302,
+            "precision": 0.9504950495049505,
+            "recall": 0.9896907216494846,
+            "f1": 0.9696969696969697,
+            "roc_auc": 0.9996064507849596,
+            "pr_auc": 0.9958177725622713
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1361,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9767980636237898,
+            "pr_auc": 0.9708040342938887
+          }
+        }
+      },
+      "stage_1_2_plus_autoencoder_max": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.7931034482758621,
+          "recall": 1.0,
+          "f1": 0.8846153846153846,
+          "roc_auc": 0.9966312958194611,
+          "pr_auc": 0.9811287481622406,
+          "confusion_matrix": [
+            [
+              1139,
+              66
+            ],
+            [
+              0,
+              253
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1302,
+            "precision": 0.5950920245398773,
+            "recall": 1.0,
+            "f1": 0.7461538461538462,
+            "roc_auc": 0.9967574966847756,
+            "pr_auc": 0.9616577063125185
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1361,
+            "precision": 0.7027027027027027,
+            "recall": 1.0,
+            "f1": 0.8253968253968254,
+            "roc_auc": 0.9965528247685924,
+            "pr_auc": 0.9673416203428987
+          }
+        }
+      },
+      "naive_max_all_three": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.7931034482758621,
+          "recall": 1.0,
+          "f1": 0.8846153846153846,
+          "roc_auc": 0.9966312958194611,
+          "pr_auc": 0.9811287481622406,
+          "confusion_matrix": [
+            [
+              1139,
+              66
+            ],
+            [
+              0,
+              253
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1302,
+            "precision": 0.5950920245398773,
+            "recall": 1.0,
+            "f1": 0.7461538461538462,
+            "roc_auc": 0.9967574966847756,
+            "pr_auc": 0.9616577063125185
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1361,
+            "precision": 0.7027027027027027,
+            "recall": 1.0,
+            "f1": 0.8253968253968254,
+            "roc_auc": 0.9965528247685924,
+            "pr_auc": 0.9673416203428987
+          }
+        }
+      },
+      "risk_fusion_stacked_lr": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9801587301587301,
+          "recall": 0.9762845849802372,
+          "f1": 0.9782178217821782,
+          "roc_auc": 0.9989109933905171,
+          "pr_auc": 0.995393133063885,
+          "confusion_matrix": [
+            [
+              1200,
+              5
+            ],
+            [
+              6,
+              247
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1302,
+            "precision": 0.9504950495049505,
+            "recall": 0.9896907216494846,
+            "f1": 0.9696969696969697,
+            "roc_auc": 0.9991615690636095,
+            "pr_auc": 0.9920888860511179
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1361,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9987551867219917,
+            "pr_auc": 0.9921097504042159
+          }
+        }
+      }
+    },
+    "fusion_fold_coefficients": [
+      {
+        "stage_1_2_score": 6.268131786703778,
+        "gcn_score": 0.0,
+        "ae_score": 4.02027674286636,
+        "intercept": -4.381860956802905
+      },
+      {
+        "stage_1_2_score": 6.475870996066871,
+        "gcn_score": 0.0,
+        "ae_score": 3.806128685006698,
+        "intercept": -4.536218845685403
+      },
+      {
+        "stage_1_2_score": 6.268121596877427,
+        "gcn_score": 0.0,
+        "ae_score": 3.885291167063526,
+        "intercept": -4.6189716569008885
+      },
+      {
+        "stage_1_2_score": 6.397586095984568,
+        "gcn_score": 0.0,
+        "ae_score": 3.4069980476399397,
+        "intercept": -4.368400772741089
+      },
+      {
+        "stage_1_2_score": 6.121035245273213,
+        "gcn_score": 0.0,
+        "ae_score": 3.9171877915734448,
+        "intercept": -4.381421463415921
+      }
+    ],
+    "fusion_avg_coefficients": {
+      "stage_1_2_score": 6.3061491441811715,
+      "gcn_score": 0.0,
+      "ae_score": 3.8071764868299938,
+      "intercept": -4.457374739109242
+    },
+    "n_graph_connected_nodes": 0,
+    "note": "n_graph_connected_nodes reflects the REAL corpus (no ring overlay) -- if this is 0, the GCN score is 0 for every row by construction (no entity clears the fan-out threshold without the synthetic ring), and fusion_avg_coefficients' gcn_score weight should be interpreted as 'the meta-model correctly learned to ignore an always-zero feature', not 'the GCN is a weak detector.' See run_fusion_with_ring_diagnostic() for the run that proves fusion recovers a graph signal when one actually exists."
+  },
+  "ring_overlay_diagnostic": {
+    "comparison": {
+      "stage_1_2_only": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9800796812749004,
+          "recall": 0.8880866425992779,
+          "f1": 0.9318181818181818,
+          "roc_auc": 0.9363615243766372,
+          "pr_auc": 0.9204877885419468,
+          "confusion_matrix": [
+            [
+              1176,
+              5
+            ],
+            [
+              31,
+              246
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1278,
+            "precision": 0.95,
+            "recall": 0.979381443298969,
+            "f1": 0.9644670050761421,
+            "roc_auc": 0.998297790619517,
+            "pr_auc": 0.9896205605367047
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1337,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9768422023925835,
+            "pr_auc": 0.9715202940497949
+          },
+          "ring_mule_synthetic": {
+            "n": 1205,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "roc_auc": 0.4229113745413491,
+            "pr_auc": 0.01732609933239164
+          }
+        }
+      },
+      "stage_1_2_plus_gcn_max": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9816849816849816,
+          "recall": 0.9675090252707581,
+          "f1": 0.9745454545454545,
+          "roc_auc": 0.9862305394987422,
+          "pr_auc": 0.9828913479936293,
+          "confusion_matrix": [
+            [
+              1176,
+              5
+            ],
+            [
+              9,
+              268
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1278,
+            "precision": 0.95,
+            "recall": 0.979381443298969,
+            "f1": 0.9644670050761421,
+            "roc_auc": 0.998297790619517,
+            "pr_auc": 0.9896205605367047
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1337,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9768422023925835,
+            "pr_auc": 0.9715202940497949
+          },
+          "ring_mule_synthetic": {
+            "n": 1205,
+            "precision": 0.8148148148148148,
+            "recall": 0.9166666666666666,
+            "f1": 0.8627450980392157,
+            "roc_auc": 0.9984829240756421,
+            "pr_auc": 0.9213766218841661
+          }
+        }
+      },
+      "stage_1_2_plus_autoencoder_max": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.79375,
+          "recall": 0.9169675090252708,
+          "f1": 0.8509212730318257,
+          "roc_auc": 0.9627098127084371,
+          "pr_auc": 0.9302740931048743,
+          "confusion_matrix": [
+            [
+              1115,
+              66
+            ],
+            [
+              23,
+              254
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1278,
+            "precision": 0.5950920245398773,
+            "recall": 1.0,
+            "f1": 0.7461538461538462,
+            "roc_auc": 0.9959583438812121,
+            "pr_auc": 0.950148399272931
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1337,
+            "precision": 0.7027027027027027,
+            "recall": 1.0,
+            "f1": 0.8253968253968254,
+            "roc_auc": 0.996276514904796,
+            "pr_auc": 0.963053253566883
+          },
+          "ring_mule_synthetic": {
+            "n": 1205,
+            "precision": 0.014925373134328358,
+            "recall": 0.041666666666666664,
+            "f1": 0.02197802197802198,
+            "roc_auc": 0.6101467682754727,
+            "pr_auc": 0.027463854619913852
+          }
+        }
+      },
+      "naive_max_all_three": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.8064516129032258,
+          "recall": 0.9927797833935018,
+          "f1": 0.889967637540453,
+          "roc_auc": 0.9945894227800585,
+          "pr_auc": 0.9724051457111866,
+          "confusion_matrix": [
+            [
+              1115,
+              66
+            ],
+            [
+              2,
+              275
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1278,
+            "precision": 0.5950920245398773,
+            "recall": 1.0,
+            "f1": 0.7461538461538462,
+            "roc_auc": 0.9959583438812121,
+            "pr_auc": 0.950148399272931
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1337,
+            "precision": 0.7027027027027027,
+            "recall": 1.0,
+            "f1": 0.8253968253968254,
+            "roc_auc": 0.996276514904796,
+            "pr_auc": 0.963053253566883
+          },
+          "ring_mule_synthetic": {
+            "n": 1205,
+            "precision": 0.25,
+            "recall": 0.9166666666666666,
+            "f1": 0.39285714285714285,
+            "roc_auc": 0.978090601185436,
+            "pr_auc": 0.3444998816227025
+          }
+        }
+      },
+      "risk_fusion_stacked_lr": {
+        "overall": {
+          "n": 1458,
+          "precision": 0.9816176470588235,
+          "recall": 0.9638989169675091,
+          "f1": 0.9726775956284153,
+          "roc_auc": 0.998031405802462,
+          "pr_auc": 0.9931136200815641,
+          "confusion_matrix": [
+            [
+              1176,
+              5
+            ],
+            [
+              10,
+              267
+            ]
+          ]
+        },
+        "by_family": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 1278,
+            "precision": 0.9494949494949495,
+            "recall": 0.9690721649484536,
+            "f1": 0.9591836734693877,
+            "roc_auc": 0.9988564644674703,
+            "pr_auc": 0.9907914957086162
+          },
+          "AUTHORIZED_PUSH_PAYMENT": {
+            "n": 1337,
+            "precision": 0.967948717948718,
+            "recall": 0.967948717948718,
+            "f1": 0.967948717948718,
+            "roc_auc": 0.9977040317853189,
+            "pr_auc": 0.9886607076078867
+          },
+          "ring_mule_synthetic": {
+            "n": 1205,
+            "precision": 0.8148148148148148,
+            "recall": 0.9166666666666666,
+            "f1": 0.8627450980392157,
+            "roc_auc": 0.9968247248094835,
+            "pr_auc": 0.8174057632874713
+          }
+        }
+      }
+    },
+    "fusion_fold_coefficients": [
+      {
+        "stage_1_2_score": 5.779828548117631,
+        "gcn_score": 6.09085804084044,
+        "ae_score": 3.335116153899131,
+        "intercept": -3.7333072893894697
+      },
+      {
+        "stage_1_2_score": 5.776654868683858,
+        "gcn_score": 5.94576969212974,
+        "ae_score": 3.507741468616702,
+        "intercept": -3.740197708405854
+      },
+      {
+        "stage_1_2_score": 6.379488137941637,
+        "gcn_score": 6.249547687235317,
+        "ae_score": 2.589223213916212,
+        "intercept": -4.007280078674662
+      },
+      {
+        "stage_1_2_score": 5.911472209083155,
+        "gcn_score": 6.140679198125501,
+        "ae_score": 3.0550705969746677,
+        "intercept": -3.8248914188505436
+      },
+      {
+        "stage_1_2_score": 5.795560325608318,
+        "gcn_score": 5.899806181165832,
+        "ae_score": 3.3477433067990128,
+        "intercept": -3.788504492806065
+      }
+    ],
+    "fusion_avg_coefficients": {
+      "stage_1_2_score": 5.928600817886919,
+      "gcn_score": 6.0653321598993655,
+      "ae_score": 3.166978948041145,
+      "intercept": -3.818836197625319
+    },
+    "n_graph_connected_nodes": 24,
+    "note": "n_graph_connected_nodes reflects the REAL corpus (no ring overlay) -- if this is 0, the GCN score is 0 for every row by construction (no entity clears the fan-out threshold without the synthetic ring), and fusion_avg_coefficients' gcn_score weight should be interpreted as 'the meta-model correctly learned to ignore an always-zero feature', not 'the GCN is a weak detector.' See run_fusion_with_ring_diagnostic() for the run that proves fusion recovers a graph signal when one actually exists.",
+    "ring_only_risk_fusion_metrics": {
+      "n": 24,
+      "note": "single class in this slice -- metrics undefined",
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          22
+        ]
+      ]
+    },
+    "n_ring_traces": 24,
+    "is_synthetic_diagnostic": true,
+    "diagnostic_purpose": "This run uses the deliberately-injected quiet ring overlay (NOT real Red Team output -- see quiet_ring_overlay.py) purely to verify the fusion meta-model can still recover a graph signal when one exists, since the real corpus has none above the noise-filtering threshold."
+  }
+}
