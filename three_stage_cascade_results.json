@@ -1,0 +1,71 @@
+{
+  "stage_1_2_overall": {
+    "n": 1458,
+    "precision": 0.98,
+    "recall": 0.8844765342960289,
+    "f1": 0.9297912713472486,
+    "roc_auc": 0.9369683037993256,
+    "pr_auc": 0.9210224004843676,
+    "confusion_matrix": [
+      [
+        1176,
+        5
+      ],
+      [
+        32,
+        245
+      ]
+    ]
+  },
+  "stage_1_2_3_overall": {
+    "n": 1458,
+    "precision": 0.9816176470588235,
+    "recall": 0.9638989169675091,
+    "f1": 0.9726775956284153,
+    "roc_auc": 0.9862152553823016,
+    "pr_auc": 0.9828582803524754,
+    "confusion_matrix": [
+      [
+        1176,
+        5
+      ],
+      [
+        10,
+        267
+      ]
+    ]
+  },
+  "stage_1_2_ring_only": {
+    "n": 24,
+    "note": "single class in this slice -- metrics undefined",
+    "confusion_matrix": [
+      [
+        0,
+        0
+      ],
+      [
+        24,
+        0
+      ]
+    ]
+  },
+  "stage_1_2_3_ring_only": {
+    "n": 24,
+    "note": "single class in this slice -- metrics undefined",
+    "confusion_matrix": [
+      [
+        0,
+        0
+      ],
+      [
+        2,
+        22
+      ]
+    ]
+  },
+  "fraud_cases_rescued_by_stage3": 22,
+  "fraud_cases_downgraded_by_stage3_should_be_zero": 0,
+  "n_graph_connected_nodes": 24,
+  "n_ring_traces": 24,
+  "note": "downgraded is guaranteed 0 by construction (final score = max(stage_1_2, graph_score)) -- reported anyway as an explicit, checkable guardrail rather than an assumption."
+}

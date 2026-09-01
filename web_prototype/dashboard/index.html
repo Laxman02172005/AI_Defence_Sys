@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Defense Lab — Payment Fraud Console</title>
+<style>
+  :root{
+    --bg: #0d131b;
+    --bg-panel: #131b26;
+    --bg-panel-raised: #182233;
+    --line: #263244;
+    --line-soft: #1c2634;
+    --text: #dce4ee;
+    --text-dim: #7d8ba0;
+    --text-faint: #4d596c;
+    --signal: #4fb0ff;
+    --signal-dim: #2c5a80;
+    --allow: #3ecf8e;
+    --review: #e8b23d;
+    --block: #e8543d;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:var(--signal); }
+
+  /* ---------- layout shell ---------- */
+  .shell{ max-width:1180px; margin:0 auto; padding:0 24px 80px; }
+
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:rgba(13,19,27,0.92); backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1180px; margin:0 auto; padding:16px 24px;
+    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; margin-right:auto; }
+  .brand .name{ font-weight:600; font-size:15px; letter-spacing:-0.01em; }
+  .brand .sub{ font-size:12.5px; color:var(--text-dim); }
+
+  .health-pill{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--mono); font-size:12.5px; color:var(--text-dim);
+    border:1px solid var(--line); border-radius:20px; padding:6px 12px;
+  }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex:none; }
+  .dot.ok{ background:var(--allow); box-shadow:0 0 8px var(--allow); }
+  .dot.bad{ background:var(--block); box-shadow:0 0 8px var(--block); }
+
+  .api-input{
+    font-family:var(--mono); font-size:12.5px; background:var(--bg-panel);
+    border:1px solid var(--line); color:var(--text-dim); border-radius:6px;
+    padding:6px 10px; width:230px;
+  }
+  .api-input:focus{ outline:none; border-color:var(--signal-dim); color:var(--text); }
+
+  button.run-btn{
+    font-family:var(--sans); font-weight:600; font-size:13.5px;
+    background:var(--signal); color:#06121c; border:none; border-radius:6px;
+    padding:9px 16px; cursor:pointer; transition:background .15s ease;
+  }
+  button.run-btn:hover{ background:#6dbeff; }
+  button.run-btn:disabled{ background:var(--line); color:var(--text-faint); cursor:default; }
+  button.run-btn.ghost{
+    background:transparent; color:var(--text-dim); border:1px solid var(--line);
+  }
+  button.run-btn.ghost:hover{ border-color:var(--signal-dim); color:var(--text); background:transparent; }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:48px 0 8px; }
+  .hero h1{
+    font-size:30px; font-weight:600; letter-spacing:-0.015em; margin:0 0 10px;
+    max-width:640px;
+  }
+  .hero p{ color:var(--text-dim); max-width:560px; margin:0; font-size:14.5px; }
+
+  section{ margin-top:52px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+  .section-head h2{ font-size:18px; font-weight:600; margin:0; letter-spacing:-0.01em; }
+  .section-head .desc{ color:var(--text-dim); font-size:13px; max-width:420px; }
+
+  /* ---------- pipeline diagram ---------- */
+  .flow{
+    display:flex; align-items:stretch; gap:0; overflow-x:auto;
+    border:1px solid var(--line); border-radius:10px; background:var(--bg-panel);
+    padding:22px 18px;
+  }
+  .flow-node{
+    flex:none; min-width:118px; display:flex; flex-direction:column; align-items:center;
+    text-align:center; gap:8px; padding:0 6px;
+  }
+  .flow-node .badge{
+    width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); background:var(--bg-panel-raised);
+    font-family:var(--mono); font-size:12px; color:var(--text-dim);
+  }
+  .flow-node .badge.done{ border-color:var(--allow); color:var(--allow); }
+  .flow-node .badge.pending{ border-color:var(--line); color:var(--text-faint); }
+  .flow-node .label{ font-size:12px; color:var(--text-dim); line-height:1.3; }
+  .flow-node .label b{ color:var(--text); font-weight:600; display:block; }
+  .flow-arrow{ flex:none; display:flex; align-items:center; color:var(--text-faint); font-size:18px; padding:0 4px; align-self:center; margin-top:-24px;}
+
+  .loop-banner{
+    margin-top:18px; border:1px dashed var(--line); border-radius:10px;
+    background: linear-gradient(180deg, rgba(232,178,61,0.05), transparent);
+    padding:16px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .loop-banner .icon{ font-family:var(--mono); font-size:20px; color:var(--review); }
+  .loop-banner .text{ font-size:13px; color:var(--text-dim); }
+  .loop-banner .text b{ color:var(--text); }
+
+  /* ---------- metric cards ---------- */
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+  .card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px;
+  }
+  .card .k{ font-size:12.5px; color:var(--text-dim); margin-bottom:8px; }
+  .card .v{ font-family:var(--mono); font-size:26px; font-weight:600; letter-spacing:-0.02em; }
+  .card .v small{ font-size:14px; color:var(--text-dim); font-weight:400; margin-left:4px;}
+  .card .delta{ font-size:12px; margin-top:6px; font-family:var(--mono); }
+  .delta.up{ color:var(--allow); } .delta.down{ color:var(--block); } .delta.flat{ color:var(--text-faint); }
+
+  .stage-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:20px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .stage-card .title{ display:flex; justify-content:space-between; align-items:baseline; }
+  .stage-card .title h3{ margin:0; font-size:14.5px; font-weight:600; }
+  .stage-card .title span{ font-family:var(--mono); font-size:11.5px; color:var(--text-faint); }
+  .metric-row{ display:flex; gap:18px; flex-wrap:wrap; }
+  .metric-row .m{ min-width:64px; }
+  .metric-row .m .n{ font-family:var(--mono); font-size:18px; font-weight:600; }
+  .metric-row .m .l{ font-size:11px; color:var(--text-dim); }
+
+  /* ---------- decision policy ---------- */
+  .policy-bar{
+    display:flex; height:34px; border-radius:6px; overflow:hidden; border:1px solid var(--line);
+    font-family:var(--mono); font-size:11.5px;
+  }
+  .policy-bar div{ display:flex; align-items:center; justify-content:center; color:#06121c; white-space:nowrap; overflow:hidden; }
+  .policy-bar .allow{ background:var(--allow); }
+  .policy-bar .review{ background:var(--review); }
+  .policy-bar .block{ background:var(--block); }
+  .policy-legend{ display:flex; gap:18px; margin-top:10px; font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
+  .policy-legend span{ display:flex; align-items:center; gap:6px; }
+  .swatch{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+  /* ---------- table ---------- */
+  table.data{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.data th{
+    text-align:left; font-weight:500; color:var(--text-dim); font-size:11.5px;
+    border-bottom:1px solid var(--line); padding:8px 10px;
+  }
+  table.data td{ border-bottom:1px solid var(--line-soft); padding:10px; vertical-align:top; }
+  table.data tr:last-child td{ border-bottom:none; }
+  .mono{ font-family:var(--mono); font-size:12px; }
+  .tag{
+    display:inline-block; font-family:var(--mono); font-size:11px; padding:2px 7px;
+    border-radius:4px; border:1px solid var(--line); color:var(--text-dim);
+  }
+  .tag.block{ color:var(--block); border-color:var(--block); }
+
+  /* ---------- explainability ---------- */
+  .shap-wrap{ display:grid; grid-template-columns:1.1fr 1fr; gap:20px; align-items:start; }
+  @media (max-width:760px){ .shap-wrap{ grid-template-columns:1fr; } }
+  .shap-wrap img{ width:100%; border-radius:10px; border:1px solid var(--line); display:block; }
+  .feat-bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .feat-bar-row .fname{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); width:190px; flex:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .feat-bar-track{ flex:1; height:8px; background:var(--bg-panel-raised); border-radius:4px; overflow:hidden; }
+  .feat-bar-fill{ height:100%; background:var(--signal); border-radius:4px; }
+
+  /* ---------- run panel ---------- */
+  .run-panel{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:20px;
+  }
+  .stage-list{ display:flex; flex-direction:column; gap:0; margin-top:14px; }
+  .stage-row{
+    display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line-soft);
+    font-size:13px;
+  }
+  .stage-row:last-child{ border-bottom:none; }
+  .stage-row .status-dot{ width:8px; height:8px; border-radius:50%; background:var(--text-faint); flex:none; }
+  .stage-row .status-dot.running{ background:var(--signal); animation:pulse 1s infinite ease-in-out; }
+  .stage-row .status-dot.success{ background:var(--allow); }
+  .stage-row .status-dot.failed{ background:var(--block); }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+  .stage-row .name{ flex:1; }
+  .stage-row .st{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); text-transform:lowercase; }
+  .log-box{
+    margin-top:14px; background:#080c11; border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+    max-height:180px; overflow-y:auto; white-space:pre-wrap; display:none;
+  }
+
+  footer{
+    margin-top:70px; padding-top:22px; border-top:1px solid var(--line);
+    font-size:12px; color:var(--text-faint); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .empty-note{ font-size:13px; color:var(--text-dim); padding:18px 0; }
+  .src{ font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="name">AI Defense Lab</div>
+      <div class="sub">Red Team / Blue Team payment fraud console</div>
+    </div>
+    <input id="apiBase" class="api-input" value="http://localhost:8000" spellcheck="false" />
+    <div class="health-pill"><span id="healthDot" class="dot"></span><span id="healthText">checking backend…</span></div>
+    <button class="run-btn ghost" id="refreshBtn">Refresh</button>
+    <button class="run-btn" id="runBtn">Run pipeline</button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <div class="hero">
+    <h1>One closed loop: attack, detect, explain, adapt.</h1>
+    <p>Every number below is read live from this backend's output files — nothing on this page is hardcoded. Trigger a stage and watch it update.</p>
+  </div>
+
+  <!-- ============ PIPELINE ARCHITECTURE ============ -->
+  <section id="architecture">
+    <div class="section-head">
+      <h2>Detection pipeline</h2>
+      <div class="desc">Red Team generates traces → Blue Team scores them through four stages → fusion and policy decide the outcome.</div>
+    </div>
+    <div class="flow" id="flowDiagram"></div>
+    <div class="loop-banner">
+      <span class="icon">↺</span>
+      <span class="text"><b>Feedback loop</b> — misses the cascade lets through get collected, turned into hard examples, and used to retrain Stage 2. See <a href="#feedback">Feedback loop</a> below.</span>
+    </div>
+  </section>
+
+  <!-- ============ CASCADE METRICS ============ -->
+  <section id="cascade">
+    <div class="section-head">
+      <h2>Cascade performance</h2>
+      <div class="desc">5-fold cross-validated, out-of-fold. Each card is what that stage adds on top of the ones before it.</div>
+    </div>
+    <div class="grid" id="cascadeGrid"></div>
+  </section>
+
+  <!-- ============ RISK FUSION ============ -->
+  <section id="fusion">
+    <div class="section-head">
+      <h2>Risk fusion</h2>
+      <div class="desc">A stacked logistic regression learns how much to trust each stage, rather than letting any one detector veto unconditionally.</div>
+    </div>
+    <div id="fusionBody"></div>
+  </section>
+
+  <!-- ============ DECISION POLICY ============ -->
+  <section id="policy">
+    <div class="section-head">
+      <h2>Decision policy</h2>
+      <div class="desc">Cost-optimal ALLOW / REVIEW / BLOCK thresholds, reweighted to an assumed production fraud rate rather than this corpus's ~19%.</div>
+    </div>
+    <div id="policyBody"></div>
+  </section>
+
+  <!-- ============ EXPLAINABILITY ============ -->
+  <section id="explainability">
+    <div class="section-head">
+      <h2>Explainability</h2>
+      <div class="desc">Global SHAP feature importance and a worked case, so a decision can be defended, not just reported.</div>
+    </div>
+    <div id="explainBody"></div>
+  </section>
+
+  <!-- ============ FEEDBACK LOOP ============ -->
+  <section id="feedback">
+    <div class="section-head">
+      <h2>Feedback loop</h2>
+      <div class="desc">Not a detection stage — this is what happens after: collect what got through, generate hard examples, retrain, compare.</div>
+    </div>
+    <div id="feedbackBody"></div>
+  </section>
+
+  <!-- ============ RUN CONTROL ============ -->
+  <section id="run">
+    <div class="section-head">
+      <h2>Run control</h2>
+      <div class="desc">Triggers the real scripts as subprocesses. A full run retrains Stage 3/4 per fold — budget ~10–12 minutes.</div>
+    </div>
+    <div class="run-panel">
+      <div class="metric-row" style="margin-bottom:2px;">
+        <span style="font-size:13px;color:var(--text-dim)">Quick demo: run just the sensitivity analysis (~2s) to prove the button is live —</span>
+        <button class="run-btn ghost" id="quickRunBtn" style="padding:5px 12px;font-size:12.5px;">Run sensitivity only</button>
+      </div>
+      <div class="stage-list" id="stageList"></div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>AI Defense Lab — Mastercard Innovation Challenge, GFF 2026</span>
+    <span id="lastUpdated">not loaded yet</span>
+  </footer>
+
+</div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const apiBaseInput = $('#apiBase');
+const getBase = () => apiBaseInput.value.replace(/\/$/, '');
+
+const STAGE_CATALOG = [
+  { id: 'stage1_2', label: 'Stage 1+2', sub: 'Rules + XGBoost' },
+  { id: 'stage3_graph', label: 'Stage 3', sub: 'GCN graph' },
+  { id: 'stage4_autoencoder', label: 'Stage 4', sub: 'Autoencoder' },
+  { id: 'risk_fusion', label: 'Fusion', sub: 'Stacked LR' },
+  { id: 'decision_policy', label: 'Policy', sub: 'Allow/Review/Block' },
+  { id: 'explainability', label: 'Explain', sub: 'SHAP' },
+];
+
+function pct(x, digits=1){ return (x==null) ? '—' : (x*100).toFixed(digits)+'%'; }
+function num(x){ return (x==null) ? '—' : x.toLocaleString(); }
+function money(x){ return (x==null) ? '—' : '$'+Number(x).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmtTime(ts){ return ts ? new Date(ts*1000).toLocaleString() : '—'; }
+
+async function fetchJSON(path, opts){
+  const res = await fetch(getBase() + path, opts);
+  if(!res.ok) throw new Error(path + ' -> ' + res.status);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------
+// Health check
+// ---------------------------------------------------------------------
+async function checkHealth(){
+  const dot = $('#healthDot'), text = $('#healthText');
+  try{
+    await fetchJSON('/api/health');
+    dot.className = 'dot ok';
+    text.textContent = 'backend connected';
+    return true;
+  }catch(e){
+    dot.className = 'dot bad';
+    text.textContent = 'backend unreachable — start uvicorn on ' + getBase();
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------
+// Pipeline architecture diagram
+// ---------------------------------------------------------------------
+function renderFlow(dashboard){
+  const nodes = [
+    { label: 'Red Team', sub: 'Attack corpus', done: true },
+    { label: 'Stage 1', sub: 'Rule filter', done: dashboard.stage1_2.available },
+    { label: 'Stage 2', sub: 'XGBoost', done: dashboard.stage1_2.available },
+    { label: 'Stage 3', sub: 'GCN graph', done: dashboard.stage3_graph.available },
+    { label: 'Stage 4', sub: 'Autoencoder', done: dashboard.stage4_autoencoder.available },
+    { label: 'Fusion', sub: 'Stacked LR', done: dashboard.risk_fusion.available },
+    { label: 'Policy', sub: 'Allow/Rev/Blk', done: dashboard.decision_policy.available },
+    { label: 'Explain', sub: 'SHAP', done: dashboard.case_reports.available },
+  ];
+  const el = $('#flowDiagram');
+  el.innerHTML = nodes.map((n,i) => `
+    <div class="flow-node">
+      <div class="badge ${n.done?'done':'pending'}">${n.done ? '✓' : '·'}</div>
+      <div class="label"><b>${n.label}</b>${n.sub}</div>
+    </div>
+    ${i < nodes.length-1 ? '<div class="flow-arrow">→</div>' : ''}
+  `).join('');
+}
+
+// ---------------------------------------------------------------------
+// Cascade metric cards
+// ---------------------------------------------------------------------
+function metricCard(title, sub, overall){
+  if(!overall) return `<div class="stage-card"><div class="title"><h3>${title}</h3><span>not run</span></div><div class="empty-note">Run this stage to populate.</div></div>`;
+  return `
+    <div class="stage-card">
+      <div class="title"><h3>${title}</h3><span>${sub}</span></div>
+      <div class="metric-row">
+        <div class="m"><div class="n">${pct(overall.precision)}</div><div class="l">precision</div></div>
+        <div class="m"><div class="n">${pct(overall.recall)}</div><div class="l">recall</div></div>
+        <div class="m"><div class="n">${pct(overall.f1)}</div><div class="l">f1</div></div>
+        <div class="m"><div class="n">${overall.roc_auc?overall.roc_auc.toFixed(3):'—'}</div><div class="l">roc-auc</div></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-faint)">n=${num(overall.n)} · confusion [[${overall.confusion_matrix[0].join(',')}],[${overall.confusion_matrix[1].join(',')}]]</div>
+    </div>`;
+}
+
+function renderCascade(d){
+  const cards = [];
+  const s12 = d.stage1_2.available ? d.stage1_2.data.cascade_stage1_rules_plus_stage2_xgboost.overall : null;
+  cards.push(metricCard('Stage 1+2', 'Rules + XGBoost', s12));
+
+  const s3 = d.stage3_graph.available ? d.stage3_graph.data.stage_1_2_3_overall : null;
+  cards.push(metricCard('Stage 1+2+3', '+ GCN graph escalation', s3));
+
+  const s4 = d.stage4_autoencoder.available ? d.stage4_autoencoder.data.stage_1_2_4_overall : null;
+  cards.push(metricCard('Stage 1+2+4', '+ Autoencoder novelty', s4));
+
+  $('#cascadeGrid').innerHTML = cards.join('');
+}
+
+// ---------------------------------------------------------------------
+// Risk fusion
+// ---------------------------------------------------------------------
+function renderFusion(d){
+  const el = $('#fusionBody');
+  if(!d.risk_fusion.available){ el.innerHTML = '<div class="empty-note">Run Stage 5 to populate.</div>'; return; }
+  const rc = d.risk_fusion.data.real_corpus_risk_fusion;
+  const stacked = rc.comparison.risk_fusion_stacked_lr.overall;
+  const naiveMax = rc.comparison.naive_max_all_three.overall;
+  const coef = rc.fusion_avg_coefficients;
+
+  el.innerHTML = `
+    <div class="grid">
+      ${metricCard('Fused score', 'Stacked logistic regression (final)', stacked)}
+      ${metricCard('max() baseline', 'Naive max of all three signals', naiveMax)}
+      <div class="stage-card">
+        <div class="title"><h3>Learned weights</h3><span>avg across folds</span></div>
+        <div class="metric-row">
+          <div class="m"><div class="n">${coef.stage_1_2_score.toFixed(2)}</div><div class="l">stage 1+2</div></div>
+          <div class="m"><div class="n">${coef.gcn_score.toFixed(2)}</div><div class="l">gcn</div></div>
+          <div class="m"><div class="n">${coef.ae_score.toFixed(2)}</div><div class="l">autoencoder</div></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-faint)">intercept ${coef.intercept.toFixed(2)} · precision holds at ${pct(stacked.precision)} vs ${pct(naiveMax.precision)} for max() — fusion avoids the false-positive spike that letting any detector veto unconditionally causes.</div>
+      </div>
+    </div>
+    <div class="src">source: ${d.risk_fusion.source_file}</div>
+  `;
+}
+
+// ---------------------------------------------------------------------
+// Decision policy
+// ---------------------------------------------------------------------
+function renderPolicy(d){
+  const el = $('#policyBody');
+  if(!d.decision_policy.available){ el.innerHTML = '<div class="empty-note">Run the decision policy stage to populate.</div>'; return; }
+  const c = d.decision_policy.data.corrected;
+  const n = d.decision_policy.data.naive;
+  const rowHtml = (label, p) => `
+    <div class="card">
+      <div class="k">${label}</div>
+      <div class="policy-bar">
+        <div class="allow" style="width:${p.allow_rate*100}%">${p.allow_rate>0.12?pct(p.allow_rate,0):''}</div>
+        <div class="review" style="width:${p.review_rate*100}%">${p.review_rate>0.08?pct(p.review_rate,0):''}</div>
+        <div class="block" style="width:${p.block_rate*100}%">${p.block_rate>0.08?pct(p.block_rate,0):''}</div>
+      </div>
+      <div class="policy-legend">
+        <span><span class="swatch" style="background:var(--allow)"></span>allow ${pct(p.allow_rate)}</span>
+        <span><span class="swatch" style="background:var(--review)"></span>review ${pct(p.review_rate)}</span>
+        <span><span class="swatch" style="background:var(--block)"></span>block ${pct(p.block_rate)}</span>
+      </div>
+      <div class="metric-row" style="margin-top:12px">
+        <div class="m"><div class="n">${pct(p.fraud_recall_blocked_plus_review)}</div><div class="l">recall (block+review)</div></div>
+        <div class="m"><div class="n">${p.legit_blocked}</div><div class="l">legit traces blocked</div></div>
+        <div class="m"><div class="n">${money(p.expected_cost_at_assumed_prevalence)}</div><div class="l">expected cost</div></div>
+        <div class="m"><div class="n">${p.cost_model.assumed_production_fraud_rate!=null?pct(p.cost_model.assumed_production_fraud_rate,2):'19% (uncorrected)'}</div><div class="l">assumed prevalence</div></div>
+      </div>
+    </div>`;
+  el.innerHTML = `<div class="grid" style="grid-template-columns:1fr 1fr">
+    ${rowHtml('Corrected — reweighted to production prevalence', c)}
+    ${rowHtml('Naive — uncorrected corpus prevalence (~19%)', n)}
+  </div>
+  <div class="src">source: ${d.decision_policy.source_file} · naive optimum blocks far more because it's implicitly told 1 in 5 customers is a fraudster — see corrected for the number that matters.</div>`;
+}
+
+// ---------------------------------------------------------------------
+// Explainability
+// ---------------------------------------------------------------------
+function renderExplain(d){
+  const el = $('#explainBody');
+  const hasImportance = d.global_feature_importance.available;
+  const hasCases = d.case_reports.available;
+  if(!hasImportance && !hasCases){ el.innerHTML = '<div class="empty-note">Run the explainability stage to populate.</div>'; return; }
+
+  let featHtml = '<div class="empty-note">not run</div>';
+  if(hasImportance){
+    const feats = d.global_feature_importance.data.overall_top_features.slice(0,8);
+    const max = Math.max(...feats.map(f=>f.mean_abs_shap));
+    featHtml = feats.map(f => `
+      <div class="feat-bar-row">
+        <div class="fname">${f.feature}</div>
+        <div class="feat-bar-track"><div class="feat-bar-fill" style="width:${(f.mean_abs_shap/max*100).toFixed(0)}%"></div></div>
+      </div>`).join('');
+  }
+
+  let caseHtml = '';
+  if(hasCases){
+    const cases = d.case_reports.data;
+    const key = 'fraud_case_that_slipped_through_as_allow' in cases ? 'fraud_case_that_slipped_through_as_allow' : Object.keys(cases)[0];
+    const c = cases[key];
+    caseHtml = `
+      <div class="card" style="margin-top:16px">
+        <div class="k">Worked case — ${key.replace(/_/g,' ')}</div>
+        <div class="mono" style="font-size:12.5px;color:var(--text-dim);margin-top:6px">
+          trace ${c.trace_id} · ${c.attack_family} (${c.attack_difficulty}) · ${money(c.dollars_in_trace)}
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="shap-wrap">
+      <div>
+        <img src="${getBase()}/api/reports/global_shap_summary_png/file" alt="Global SHAP summary" onerror="this.style.display='none'"/>
+      </div>
+      <div class="card">
+        <div class="k">Top features by mean |SHAP|</div>
+        <div style="margin-top:12px">${featHtml}</div>
+      </div>
+    </div>
+    ${caseHtml}
+  `;
+}
+
+// ---------------------------------------------------------------------
+// Feedback loop
+// ---------------------------------------------------------------------
+function renderFeedback(d){
+  const el = $('#feedbackBody');
+  const parts = [];
+
+  // misses table
+  if(d.misses.available && d.misses.rows.length){
+    const rows = d.misses.rows.map(m => `
+      <tr>
+        <td class="mono">${m.trace_id}</td>
+        <td>${m.attack_family}</td>
+        <td><span class="tag">${m.attack_difficulty}</span></td>
+        <td><span class="tag block">${m.final_decision}</span></td>
+        <td class="mono">${m.final_score}</td>
+        <td style="max-width:320px;font-size:12.5px;color:var(--text-dim)">${m.reason_for_miss || ''}</td>
+      </tr>`).join('');
+    parts.push(`
+      <div class="stage-card">
+        <div class="title"><h3>Full-cascade misses</h3><span>${d.misses.count} case${d.misses.count===1?'':'s'}</span></div>
+        <table class="data">
+          <thead><tr><th>trace</th><th>family</th><th>difficulty</th><th>decision</th><th>score</th><th>why missed</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="src">source: ${d.misses.source_file}</div>
+      </div>`);
+  } else {
+    parts.push('<div class="stage-card"><div class="title"><h3>Full-cascade misses</h3><span>not run</span></div><div class="empty-note">Run the miss collector to populate.</div></div>');
+  }
+
+  // adaptive round2 + retrain comparison
+  if(d.adaptive_round2.available){
+    const a = d.adaptive_round2.data;
+    const dl = a.metric_deltas_round2_minus_round1;
+    const deltaClass = (x) => x>0 ? 'up' : (x<0 ? 'down' : 'flat');
+    const deltaSign = (x) => x>0 ? '+' : '';
+    parts.push(`
+      <div class="grid" style="margin-top:14px">
+        <div class="card">
+          <div class="k">Hard examples generated</div>
+          <div class="v">${a.hard_examples_generated_total}<small>/ ${a.hard_examples_used_for_stage2_retrain} used to retrain</small></div>
+        </div>
+        <div class="card">
+          <div class="k">Precision, round 1 → 2</div>
+          <div class="v">${pct(a.round2_holdout_metrics.precision)}</div>
+          <div class="delta ${deltaClass(dl.precision)}">${deltaSign(dl.precision)}${(dl.precision*100).toFixed(2)} pts vs round 1</div>
+        </div>
+        <div class="card">
+          <div class="k">F1, round 1 → 2</div>
+          <div class="v">${pct(a.round2_holdout_metrics.f1)}</div>
+          <div class="delta ${deltaClass(dl.f1)}">${deltaSign(dl.f1)}${(dl.f1*100).toFixed(2)} pts vs round 1</div>
+        </div>
+        <div class="card">
+          <div class="k">Known misses remaining</div>
+          <div class="v">${a.remaining_known_misses.stage1 + a.remaining_known_misses.stage2.length + a.remaining_known_misses.stage3_graph.length + a.remaining_known_misses.decision_policy.length}</div>
+          <div class="delta flat">of ${a.misses_found.length} originally found</div>
+        </div>
+      </div>
+      <div class="src">source: ${d.adaptive_round2.source_file} · verdict: ${a.verdict.stage2_generalization}</div>
+    `);
+  } else {
+    parts.push('<div class="empty-note" style="margin-top:14px">Run the adaptive feedback loop to see round 1 vs round 2.</div>');
+  }
+
+  el.innerHTML = parts.join('');
+}
+
+// ---------------------------------------------------------------------
+// Dashboard load
+// ---------------------------------------------------------------------
+async function loadDashboard(){
+  try{
+    const d = await fetchJSON('/api/reports/dashboard');
+    renderFlow(d);
+    renderCascade(d);
+    renderFusion(d);
+    renderPolicy(d);
+    renderExplain(d);
+    renderFeedback(d);
+    $('#lastUpdated').textContent = 'last loaded ' + new Date().toLocaleTimeString();
+  }catch(e){
+    console.error(e);
+    $('#lastUpdated').textContent = 'failed to load — check backend connection above';
+  }
+}
+
+// ---------------------------------------------------------------------
+// Run control
+// ---------------------------------------------------------------------
+let pollTimer = null;
+
+function renderStageList(job){
+  const list = job ? job.stages : STAGE_CATALOG.map(s => ({ id: s.id, label: s.label + ' — ' + s.sub, status: 'pending' }));
+  $('#stageList').innerHTML = list.map(s => `
+    <div class="stage-row">
+      <span class="status-dot ${s.status}"></span>
+      <span class="name">${s.label || s.id}</span>
+      <span class="st">${s.status}</span>
+    </div>`).join('');
+
+  if(job){
+    const logs = job.stages.flatMap(s => s.log_tail && s.log_tail.length ? [`— ${s.label} —`, ...s.log_tail] : []);
+    const box = $('#logBox');
+    if(logs.length){ box.style.display = 'block'; box.textContent = logs.join('\n'); box.scrollTop = box.scrollHeight; }
+  }
+}
+
+async function pollJob(jobId){
+  try{
+    const job = await fetchJSON('/api/pipeline/status/' + jobId);
+    renderStageList(job);
+    if(job.status === 'running'){
+      pollTimer = setTimeout(() => pollJob(jobId), 1500);
+    } else {
+      $('#runBtn').disabled = false;
+      $('#quickRunBtn').disabled = false;
+      loadDashboard();
+    }
+  }catch(e){
+    console.error(e);
+  }
+}
+
+async function startRun(stageIds){
+  clearTimeout(pollTimer);
+  $('#runBtn').disabled = true;
+  $('#quickRunBtn').disabled = true;
+  try{
+    const res = await fetchJSON('/api/pipeline/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage_ids: stageIds })
+    });
+    pollJob(res.job_id);
+  }catch(e){
+    console.error(e);
+    $('#runBtn').disabled = false;
+    $('#quickRunBtn').disabled = false;
+    alert('Could not start run — check backend connection.');
+  }
+}
+
+// ---------------------------------------------------------------------
+// Wire up
+// ---------------------------------------------------------------------
+$('#runBtn').addEventListener('click', () => startRun(null));
+$('#quickRunBtn').addEventListener('click', () => startRun(['decision_policy_sensitivity']));
+$('#refreshBtn').addEventListener('click', () => { checkHealth(); loadDashboard(); });
+apiBaseInput.addEventListener('change', () => { checkHealth(); loadDashboard(); });
+
+renderStageList(null);
+checkHealth().then(loadDashboard);
+</script>
+</body>
+</html>

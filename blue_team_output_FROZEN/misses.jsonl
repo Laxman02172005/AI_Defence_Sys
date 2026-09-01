@@ -1,0 +1,2 @@
+{"trace_id": "atk-1179705d", "attack_family": "ACCOUNT_TAKEOVER", "attack_difficulty": "advanced", "model_confidence": 0.008381753228604794, "beneficiary_signal_fired": false, "new_device_signal_fired": true}
+{"trace_id": "atk-3f48c9b5", "attack_family": "AUTHORIZED_PUSH_PAYMENT", "attack_difficulty": "medium", "model_confidence": 0.3644599914550781, "beneficiary_signal_fired": false, "new_device_signal_fired": false}

@@ -1,0 +1,374 @@
+{
+  "single_holdout_split_80_20": {
+    "overall": {
+      "n": 292,
+      "precision": 0.9807692307692307,
+      "recall": 1.0,
+      "f1": 0.9902912621359223,
+      "roc_auc": 0.9979253112033195,
+      "pr_auc": 0.9807692307692307,
+      "confusion_matrix": [
+        [
+          240,
+          1
+        ],
+        [
+          0,
+          51
+        ]
+      ]
+    },
+    "by_family": {
+      "ACCOUNT_TAKEOVER": {
+        "n": 262,
+        "precision": 0.9545454545454546,
+        "recall": 1.0,
+        "f1": 0.9767441860465116,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.9545454545454546
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "n": 271,
+        "precision": 0.967741935483871,
+        "recall": 1.0,
+        "f1": 0.9836065573770492,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.967741935483871
+      }
+    },
+    "by_family_difficulty": {
+      "ACCOUNT_TAKEOVER_easy": {
+        "n": 243,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.6666666666666666,
+        "fraud_sample_size_warning": true
+      },
+      "ACCOUNT_TAKEOVER_medium": {
+        "n": 244,
+        "precision": 0.75,
+        "recall": 1.0,
+        "f1": 0.8571428571428571,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.75,
+        "fraud_sample_size_warning": true
+      },
+      "ACCOUNT_TAKEOVER_hard": {
+        "n": 248,
+        "precision": 0.875,
+        "recall": 1.0,
+        "f1": 0.9333333333333333,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.875,
+        "fraud_sample_size_warning": true
+      },
+      "ACCOUNT_TAKEOVER_advanced": {
+        "n": 250,
+        "precision": 0.9,
+        "recall": 1.0,
+        "f1": 0.9473684210526315,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.9,
+        "fraud_sample_size_warning": true
+      },
+      "AUTHORIZED_PUSH_PAYMENT_medium": {
+        "n": 250,
+        "precision": 0.9,
+        "recall": 1.0,
+        "f1": 0.9473684210526315,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.9,
+        "fraud_sample_size_warning": true
+      },
+      "AUTHORIZED_PUSH_PAYMENT_hard": {
+        "n": 249,
+        "precision": 0.8888888888888888,
+        "recall": 1.0,
+        "f1": 0.9411764705882353,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.8888888888888888,
+        "fraud_sample_size_warning": true
+      },
+      "AUTHORIZED_PUSH_PAYMENT_advanced": {
+        "n": 254,
+        "precision": 0.9285714285714286,
+        "recall": 1.0,
+        "f1": 0.9629629629629629,
+        "roc_auc": 0.9979253112033195,
+        "pr_auc": 0.9285714285714286,
+        "fraud_sample_size_warning": false
+      }
+    }
+  },
+  "cross_validated_5fold_ALL_FEATURES_single_stage": {
+    "overall": {
+      "n": 1458,
+      "precision": 0.98046875,
+      "recall": 0.9920948616600791,
+      "f1": 0.9862475442043221,
+      "roc_auc": 0.9996851065225592,
+      "pr_auc": 0.9985694283369929,
+      "confusion_matrix": [
+        [
+          1200,
+          5
+        ],
+        [
+          2,
+          251
+        ]
+      ]
+    },
+    "by_family": {
+      "ACCOUNT_TAKEOVER": {
+        "n": 1302,
+        "precision": 0.9504950495049505,
+        "recall": 0.9896907216494846,
+        "f1": 0.9696969696969697,
+        "roc_auc": 0.9995037857723403,
+        "pr_auc": 0.9951276414373578
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "n": 1361,
+        "precision": 0.96875,
+        "recall": 0.9935897435897436,
+        "f1": 0.9810126582278481,
+        "roc_auc": 0.9997978508351953,
+        "pr_auc": 0.9984169448228352
+      }
+    },
+    "by_family_difficulty": {
+      "ACCOUNT_TAKEOVER_easy": {
+        "n": 1227,
+        "precision": 0.8148148148148148,
+        "recall": 1.0,
+        "f1": 0.8979591836734694,
+        "roc_auc": 0.9999245567710299,
+        "pr_auc": 0.9962121212121211,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_medium": {
+        "n": 1230,
+        "precision": 0.8333333333333334,
+        "recall": 1.0,
+        "f1": 0.9090909090909091,
+        "roc_auc": 0.9999004149377594,
+        "pr_auc": 0.9954370370370372,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_hard": {
+        "n": 1230,
+        "precision": 0.8333333333333334,
+        "recall": 1.0,
+        "f1": 0.9090909090909091,
+        "roc_auc": 0.9999336099585063,
+        "pr_auc": 0.9968615384615387,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_advanced": {
+        "n": 1230,
+        "precision": 0.8275862068965517,
+        "recall": 0.96,
+        "f1": 0.8888888888888888,
+        "roc_auc": 0.9983070539419087,
+        "pr_auc": 0.9605899070666688,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_easy": {
+        "n": 1211,
+        "precision": 0.5454545454545454,
+        "recall": 1.0,
+        "f1": 0.7058823529411765,
+        "roc_auc": 0.9997233748271093,
+        "pr_auc": 0.9484126984126984,
+        "fraud_sample_size_warning": true
+      },
+      "AUTHORIZED_PUSH_PAYMENT_medium": {
+        "n": 1255,
+        "precision": 0.9074074074074074,
+        "recall": 0.98,
+        "f1": 0.9423076923076923,
+        "roc_auc": 0.9997178423236515,
+        "pr_auc": 0.9935322661661614,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_hard": {
+        "n": 1255,
+        "precision": 0.9090909090909091,
+        "recall": 1.0,
+        "f1": 0.9523809523809523,
+        "roc_auc": 0.9997676348547719,
+        "pr_auc": 0.9944249502017025,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_advanced": {
+        "n": 1255,
+        "precision": 0.9090909090909091,
+        "recall": 1.0,
+        "f1": 0.9523809523809523,
+        "roc_auc": 0.9999170124481328,
+        "pr_auc": 0.9981185185185186,
+        "fraud_sample_size_warning": false
+      }
+    }
+  },
+  "cross_validated_5fold_ablation_no_shortcut_or_beneficiary_device_features": {
+    "overall": {
+      "n": 1458,
+      "precision": 0.9761904761904762,
+      "recall": 0.9723320158102767,
+      "f1": 0.9742574257425742,
+      "roc_auc": 0.9977711446049891,
+      "pr_auc": 0.9938742617289859,
+      "confusion_matrix": [
+        [
+          1199,
+          6
+        ],
+        [
+          7,
+          246
+        ]
+      ]
+    },
+    "by_family": {
+      "ACCOUNT_TAKEOVER": {
+        "n": 1302,
+        "precision": 0.9387755102040817,
+        "recall": 0.9484536082474226,
+        "f1": 0.9435897435897436,
+        "roc_auc": 0.9988749625700475,
+        "pr_auc": 0.989433888059821
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "n": 1361,
+        "precision": 0.9625,
+        "recall": 0.9871794871794872,
+        "f1": 0.9746835443037974,
+        "roc_auc": 0.9970847962549207,
+        "pr_auc": 0.9913071144133877
+      }
+    },
+    "by_family_difficulty": {
+      "ACCOUNT_TAKEOVER_easy": {
+        "n": 1227,
+        "precision": 0.7777777777777778,
+        "recall": 0.9545454545454546,
+        "f1": 0.8571428571428571,
+        "roc_auc": 0.9995096190116937,
+        "pr_auc": 0.9831168831168832,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_medium": {
+        "n": 1230,
+        "precision": 0.7931034482758621,
+        "recall": 0.92,
+        "f1": 0.8518518518518519,
+        "roc_auc": 0.9988713692946057,
+        "pr_auc": 0.9690909090909091,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_hard": {
+        "n": 1230,
+        "precision": 0.8064516129032258,
+        "recall": 1.0,
+        "f1": 0.8928571428571429,
+        "roc_auc": 0.9999668049792532,
+        "pr_auc": 0.9984615384615385,
+        "fraud_sample_size_warning": false
+      },
+      "ACCOUNT_TAKEOVER_advanced": {
+        "n": 1230,
+        "precision": 0.7931034482758621,
+        "recall": 0.92,
+        "f1": 0.8518518518518519,
+        "roc_auc": 0.9972282157676349,
+        "pr_auc": 0.9453667251667253,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_easy": {
+        "n": 1211,
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6666666666666666,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "fraud_sample_size_warning": true
+      },
+      "AUTHORIZED_PUSH_PAYMENT_medium": {
+        "n": 1255,
+        "precision": 0.8909090909090909,
+        "recall": 0.98,
+        "f1": 0.9333333333333333,
+        "roc_auc": 0.9954107883817427,
+        "pr_auc": 0.9803289552645937,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_hard": {
+        "n": 1255,
+        "precision": 0.8909090909090909,
+        "recall": 0.98,
+        "f1": 0.9333333333333333,
+        "roc_auc": 0.9955933609958507,
+        "pr_auc": 0.9827545741324921,
+        "fraud_sample_size_warning": false
+      },
+      "AUTHORIZED_PUSH_PAYMENT_advanced": {
+        "n": 1255,
+        "precision": 0.8928571428571429,
+        "recall": 1.0,
+        "f1": 0.9433962264150944,
+        "roc_auc": 0.9999004149377593,
+        "pr_auc": 0.997857142857143,
+        "fraud_sample_size_warning": false
+      }
+    }
+  },
+  "cascade_stage1_rules_plus_stage2_xgboost": {
+    "overall": {
+      "n": 1458,
+      "precision": 0.9801587301587301,
+      "recall": 0.9762845849802372,
+      "f1": 0.9782178217821782,
+      "roc_auc": 0.9855427812310367,
+      "pr_auc": 0.9826667502930168,
+      "confusion_matrix": [
+        [
+          1200,
+          5
+        ],
+        [
+          6,
+          247
+        ]
+      ]
+    },
+    "stage1_diagnostics": {
+      "stage1_recall_on_fraud_ceiling": 0.9802371541501976,
+      "stage1_fraud_missed_permanently": 5,
+      "stage1_legit_escalation_rate": 0.44149377593360994,
+      "stage1_legit_autoclear_rate_cost_saving": 0.5585062240663901,
+      "note": "stage1_recall_on_fraud_ceiling is the cascade's hard recall ceiling -- Stage 2 can never catch what Stage 1 auto-clears."
+    },
+    "by_family": {
+      "ACCOUNT_TAKEOVER": {
+        "n": 1302,
+        "precision": 0.9504950495049505,
+        "recall": 0.9896907216494846,
+        "f1": 0.9696969696969697,
+        "roc_auc": 0.9996064507849596,
+        "pr_auc": 0.9958177725622713
+      },
+      "AUTHORIZED_PUSH_PAYMENT": {
+        "n": 1361,
+        "precision": 0.967948717948718,
+        "recall": 0.967948717948718,
+        "f1": 0.967948717948718,
+        "roc_auc": 0.9767980636237898,
+        "pr_auc": 0.9708040342938887
+      }
+    }
+  }
+}
